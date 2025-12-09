@@ -18,6 +18,7 @@ public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
+    private const string LoggerCategoryName = "Microsoft.Extensions.Hosting.Extensions";
 
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -146,38 +147,29 @@ public static class Extensions
             loggingBuilder.AddConsole();
         });
         
-        var logger = loggerFactory.CreateLogger("Microsoft.Extensions.Hosting.Extensions");
+        var logger = loggerFactory.CreateLogger(LoggerCategoryName);
         
         // Use the appropriate log method based on log level
-        if (exception != null)
+        switch (logLevel)
         {
-            switch (logLevel)
-            {
-                case LogLevel.Warning:
+            case LogLevel.Warning:
+                if (exception != null)
                     logger.LogWarning(exception, message);
-                    break;
-                case LogLevel.Error:
-                    logger.LogError(exception, message);
-                    break;
-                default:
-                    logger.LogInformation(exception, message);
-                    break;
-            }
-        }
-        else
-        {
-            switch (logLevel)
-            {
-                case LogLevel.Warning:
+                else
                     logger.LogWarning(message);
-                    break;
-                case LogLevel.Error:
+                break;
+            case LogLevel.Error:
+                if (exception != null)
+                    logger.LogError(exception, message);
+                else
                     logger.LogError(message);
-                    break;
-                default:
+                break;
+            default:
+                if (exception != null)
+                    logger.LogInformation(exception, message);
+                else
                     logger.LogInformation(message);
-                    break;
-            }
+                break;
         }
     }
 
