@@ -37,7 +37,7 @@ if (!isLocalDev)
 {
     // Use Azure Cache for Redis in deployed environments
     redis = builder.AddAzureRedis("cache");
-    Console.WriteLine("✅ Azure Cache for Redis enabled (managed service with SLA, backups, geo-replication)");
+    Console.WriteLine("✅ Azure Cache for Redis enabled (managed service)");
 }
 else
 {
