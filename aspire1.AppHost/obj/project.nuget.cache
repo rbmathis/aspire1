@@ -92,5 +92,15 @@
     "C:\\Users\\rmathis\\.nuget\\packages\\system.security.cryptography.protecteddata\\4.5.0\\system.security.cryptography.protecteddata.4.5.0.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\yamldotnet\\16.3.0\\yamldotnet.16.3.0.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "Undefined",
+      "level": "Warning",
+      "message": "Problem reading the cache file C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\obj\\project.nuget.cache : '<' is an invalid start of a property name. Expected a '\"'. Path: $ | LineNumber: 2 | BytePositionInLine: 0.",
+      "projectPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj",
+      "targetGraphs": []
+    }
+  ]
 }
