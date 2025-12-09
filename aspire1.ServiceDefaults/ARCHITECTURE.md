@@ -178,9 +178,38 @@ private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builde
         builder.Services.AddOpenTelemetry().UseOtlpExporter();
     }
 
+    // Azure Monitor (Application Insights) exporter with graceful fallback
+    var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+    if (!string.IsNullOrEmpty(appInsightsConnectionString))
+    {
+        try
+        {
+            builder.Services.AddOpenTelemetry().UseAzureMonitor();
+            Console.WriteLine("✅ Application Insights telemetry enabled");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️  Application Insights connection failed: {ex.Message}");
+            Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+        }
+    }
+    else
+    {
+        Console.WriteLine("⚠️  Application Insights not configured (offline mode)");
+    }
+
     return builder;
 }
 ```
+
+**Offline-First Design:**
+
+- App runs normally without Application Insights connection string
+- Single console log message on startup
+- Try-catch prevents exceptions from blocking app startup
+- Telemetry falls back to local Aspire Dashboard
+
+````
 
 ---
 
@@ -193,6 +222,74 @@ private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builde
 | Check Name | Tag    | Purpose                    | Response         |
 | ---------- | ------ | -------------------------- | ---------------- |
 | `self`     | `live` | Verifies app is responsive | Always `Healthy` |
+
+## 📊 Custom Application Metrics
+
+**Location:** [`ApplicationMetrics.cs`](ApplicationMetrics.cs)
+
+### Available Metrics
+
+The `ApplicationMetrics` static class provides pre-configured OpenTelemetry instruments:
+
+```csharp
+using Microsoft.Extensions.Hosting;
+
+// Track counter clicks
+ApplicationMetrics.CounterClicks.Add(1,
+    new KeyValuePair<string, object?>("page", "counter"),
+    new KeyValuePair<string, object?>("range", ApplicationMetrics.GetCountRange(count)));
+
+// Track weather API calls
+ApplicationMetrics.WeatherApiCalls.Add(1,
+    new KeyValuePair<string, object?>("endpoint", "weatherforecast"));
+
+// Track sunny forecasts
+ApplicationMetrics.SunnyForecasts.Add(1,
+    new KeyValuePair<string, object?>("temperature_range",
+        ApplicationMetrics.GetTemperatureRange(tempC)));
+
+// Track cache hits/misses
+ApplicationMetrics.CacheHits.Add(1,
+    new KeyValuePair<string, object?>("entity", "weather"));
+ApplicationMetrics.CacheMisses.Add(1,
+    new KeyValuePair<string, object?>("entity", "weather"));
+
+// Track API call duration
+ApplicationMetrics.ApiCallDuration.Record(stopwatch.ElapsedMilliseconds,
+    new KeyValuePair<string, object?>("endpoint", "weatherforecast"),
+    new KeyValuePair<string, object?>("success", "true"));
+````
+
+### Helper Methods
+
+**Cardinality Reduction:**
+
+```csharp
+// Categorize counter values into ranges
+string range = ApplicationMetrics.GetCountRange(42); // Returns "11-50"
+
+// Categorize temperatures into ranges
+string tempRange = ApplicationMetrics.GetTemperatureRange(18); // Returns "16-25"
+```
+
+**Why Ranges?** Reduces metric cardinality from potentially thousands of unique values to 4-5 categories, improving Application Insights query performance and cost.
+
+### Meter Configuration
+
+**Meter Name:** `aspire1.metrics`
+**Version:** `1.0.0`
+
+Registered in `ConfigureOpenTelemetry`:
+
+```csharp
+.WithMetrics(metrics =>
+{
+    metrics.AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddMeter("aspire1.metrics"); // ← Custom application metrics
+})
+```
 
 **Usage Example:**
 

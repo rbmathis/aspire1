@@ -19,9 +19,11 @@ graph TB
 
     subgraph "Azure Services"
         ACR[Azure Container Registry]
-        AppInsights[Application Insights]
+        AppInsights[Application Insights<br/>Custom Metrics]
         KeyVault[Azure Key Vault]
         LogAnalytics[Log Analytics Workspace]
+        AppConfig[Azure App Configuration]
+        Redis[Redis Cache]
     end
 
     subgraph "CI/CD"
@@ -70,6 +72,54 @@ graph TB
 | aspire1.ApiService | `GET /weatherforecast` | Sample weather data API                        |
 | aspire1.ApiService | `GET /version`         | Version + commit SHA for deployment tracking   |
 | aspire1.ApiService | `GET /health/detailed` | Enhanced health with version for OpenTelemetry |
+
+## 📊 Custom Telemetry & Observability
+
+### Application Insights Custom Metrics
+
+The solution includes **6 custom metrics** tracked via OpenTelemetry:
+
+| Metric                | Type      | Tags                      | Purpose                                                                |
+| --------------------- | --------- | ------------------------- | ---------------------------------------------------------------------- |
+| `counter.clicks`      | Counter   | page, range               | Tracks Counter page button clicks by range (0-10, 11-50, 51-100, 100+) |
+| `weather.api.calls`   | Counter   | endpoint, feature_enabled | Total weather API call volume                                          |
+| `weather.sunny.count` | Counter   | temperature_range         | Counts sunny forecasts by temp range (<0, 0-15, 16-25, >25°C)          |
+| `cache.hits`          | Counter   | entity                    | Cache hit count by entity type                                         |
+| `cache.misses`        | Counter   | entity                    | Cache miss count by entity type                                        |
+| `api.call.duration`   | Histogram | endpoint, success         | API call latency distribution in milliseconds                          |
+
+**Meter Name:** `aspire1.metrics`
+
+**Implementation:** See [`aspire1.ServiceDefaults/ApplicationMetrics.cs`](aspire1.ServiceDefaults/ApplicationMetrics.cs)
+
+### Pre-Built Dashboard
+
+Automatically deployed Azure Portal dashboard includes:
+
+- Counter clicks by range (bar chart)
+- Sunny forecasts over time by temperature (line chart)
+- Cache hit/miss ratio (pie chart)
+- API call duration percentiles P50/P95/P99 (line chart)
+- Weather API call volume (area chart)
+
+**Location:** `infra/dashboard.bicep`
+
+### Alert Rules
+
+Automated alerts with email notifications:
+
+1. **Cache Miss Rate >50%** (Severity: Warning) - 5-minute window
+2. **API Errors >5/min** (Severity: Error) - Real-time
+3. **API Latency P95 >1000ms** (Severity: Warning) - 10-minute window
+
+**Location:** `infra/alerts.bicep`
+
+### Offline-First Design
+
+✅ Application runs completely disconnected from Azure
+✅ Single startup log message when App Insights unavailable
+✅ Graceful degradation with try-catch wrapper
+✅ Local telemetry via Aspire Dashboard
 
 ## 🏗️ Project Structure
 

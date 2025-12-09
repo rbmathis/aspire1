@@ -88,6 +88,26 @@ graph TB
 - SignalR-based UI updates
 - Demonstrates Blazor event handling
 
+**Custom Telemetry:**
+
+```csharp
+private void IncrementCount()
+{
+    currentCount++;
+
+    // Track counter clicks with range categorization
+    ApplicationMetrics.CounterClicks.Add(1,
+        new KeyValuePair<string, object?>("page", "counter"),
+        new KeyValuePair<string, object?>("range",
+            ApplicationMetrics.GetCountRange(currentCount)));
+}
+```
+
+**Metric Tags:**
+
+- `page`: "counter"
+- `range`: "0-10", "11-50", "51-100", or "100+"
+
 **Implementation:**
 
 ```razor

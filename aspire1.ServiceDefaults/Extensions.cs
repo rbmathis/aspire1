@@ -7,6 +7,7 @@ using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -57,7 +58,8 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter("aspire1.metrics"); // Custom application metrics
             })
             .WithTracing(tracing =>
             {
@@ -87,12 +89,36 @@ public static class Extensions
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
         }
 
-        // Uncomment the following lines to enable the Azure Monitor exporter (requires the Azure.Monitor.OpenTelemetry.AspNetCore package)
-        //if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
-        //{
-        //    builder.Services.AddOpenTelemetry()
-        //       .UseAzureMonitor();
-        //}
+        // Enable Azure Monitor (Application Insights) exporter when connection string is configured
+        // For local development: use User Secrets or appsettings.Development.json
+        // For Azure: automatically injected by azd or set via Key Vault reference
+        var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        if (!string.IsNullOrEmpty(appInsightsConnectionString))
+        {
+            try
+            {
+                builder.Services.AddOpenTelemetry()
+                   .UseAzureMonitor();
+                builder.Logging.AddConsole().AddFilter((category, level) =>
+                {
+                    if (category == "Microsoft.Extensions.Hosting.Extensions" && level == LogLevel.Information)
+                    {
+                        return true;
+                    }
+                    return level >= LogLevel.Warning;
+                });
+                Console.WriteLine("✅ Application Insights telemetry enabled");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠️  Application Insights connection failed: {ex.Message}");
+                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+            }
+        }
+        else
+        {
+            Console.WriteLine("⚠️  Application Insights not configured (offline mode)");
+        }
 
         return builder;
     }

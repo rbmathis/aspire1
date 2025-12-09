@@ -28,10 +28,14 @@ public class CachedWeatherService
             if (cachedData != null)
             {
                 _logger.LogInformation("Cache HIT for weather forecast (maxItems={MaxItems})", maxItems);
+                ApplicationMetrics.CacheHits.Add(1,
+                    new KeyValuePair<string, object?>("entity", "weather"));
                 return JsonSerializer.Deserialize<WeatherForecast[]>(cachedData)!;
             }
 
             _logger.LogInformation("Cache MISS for weather forecast (maxItems={MaxItems})", maxItems);
+            ApplicationMetrics.CacheMisses.Add(1,
+                new KeyValuePair<string, object?>("entity", "weather"));
         }
         catch (Exception ex)
         {

@@ -4,22 +4,39 @@ public class WeatherApiClient(HttpClient httpClient)
 {
     public async Task<WeatherForecast[]> GetWeatherAsync(int maxItems = 10, CancellationToken cancellationToken = default)
     {
-        List<WeatherForecast>? forecasts = null;
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var success = false;
 
-        await foreach (var forecast in httpClient.GetFromJsonAsAsyncEnumerable<WeatherForecast>("/weatherforecast", cancellationToken))
+        try
         {
-            if (forecasts?.Count >= maxItems)
-            {
-                break;
-            }
-            if (forecast is not null)
-            {
-                forecasts ??= [];
-                forecasts.Add(forecast);
-            }
-        }
+            List<WeatherForecast>? forecasts = null;
 
-        return forecasts?.ToArray() ?? [];
+            await foreach (var forecast in httpClient.GetFromJsonAsAsyncEnumerable<WeatherForecast>("/weatherforecast", cancellationToken))
+            {
+                if (forecasts?.Count >= maxItems)
+                {
+                    break;
+                }
+                if (forecast is not null)
+                {
+                    forecasts ??= [];
+                    forecasts.Add(forecast);
+                }
+            }
+
+            success = true;
+            return forecasts?.ToArray() ?? [];
+        }
+        finally
+        {
+            stopwatch.Stop();
+
+            // Track API call duration with endpoint and success status
+            Microsoft.Extensions.Hosting.ApplicationMetrics.ApiCallDuration.Record(
+                stopwatch.ElapsedMilliseconds,
+                new KeyValuePair<string, object?>("endpoint", "weatherforecast"),
+                new KeyValuePair<string, object?>("success", success.ToString().ToLower()));
+        }
     }
 }
 
