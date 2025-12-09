@@ -76,10 +76,7 @@
   "compounds": [
     {
       "name": "Debug All Services",
-      "configurations": [
-        "Debug ApiService",
-        "Debug Web (Blazor)"
-      ],
+      "configurations": ["Debug ApiService", "Debug Web (Blazor)"],
       "stopAll": true,
       "presentation": {
         "hidden": false,

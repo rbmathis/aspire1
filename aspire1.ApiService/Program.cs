@@ -1,5 +1,6 @@
 using System.Reflection;
 using Azure.Identity;
+using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.FeatureManagement;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +17,7 @@ if (!string.IsNullOrEmpty(appConfigEndpoint))
         options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
                .UseFeatureFlags(featureFlagOptions =>
                {
-                   featureFlagOptions.CacheExpirationInterval = TimeSpan.FromSeconds(30);
+                   featureFlagOptions.SetRefreshInterval(TimeSpan.FromSeconds(30));
                    // Use sentinel key for cache refresh
                    featureFlagOptions.Select("*", builder.Environment.EnvironmentName);
                });
@@ -60,7 +61,7 @@ string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "
 
 app.MapGet("/", () => "API service is running. Navigate to /weatherforecast to see sample data.");
 
-app.MapGet("/weatherforecast", async (IFeatureManager featureManager) => (IFeatureManager featureManager) =>
+app.MapGet("/weatherforecast", async (IFeatureManager featureManager) =>
 {
     // Check if feature is enabled
     if (!await featureManager.IsEnabledAsync("WeatherForecast"))
@@ -98,7 +99,7 @@ app.MapGet("/version", () => new
 app.MapGet("/health/detailed", async (IFeatureManager featureManager) =>
 {
     var showDetailed = await featureManager.IsEnabledAsync("DetailedHealth");
-    
+
     if (showDetailed)
     {
         return Results.Ok(new
@@ -116,7 +117,7 @@ app.MapGet("/health/detailed", async (IFeatureManager featureManager) =>
             }
         });
     }
-    
+
     return Results.Ok(new { status = "healthy" });
 })
 .WithName("GetDetailedHealth");

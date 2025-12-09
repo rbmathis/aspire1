@@ -69,10 +69,7 @@
       "label": "restore",
       "command": "dotnet",
       "type": "process",
-      "args": [
-        "restore",
-        "${workspaceFolder}/aspire1.sln"
-      ],
+      "args": ["restore", "${workspaceFolder}/aspire1.sln"],
       "problemMatcher": "$msCompile"
     },
     {
@@ -203,9 +200,7 @@
       "label": "azd-up",
       "command": "azd",
       "type": "shell",
-      "args": [
-        "up"
-      ],
+      "args": ["up"],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -221,9 +216,7 @@
       "label": "azd-deploy",
       "command": "azd",
       "type": "shell",
-      "args": [
-        "deploy"
-      ],
+      "args": ["deploy"],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -239,11 +232,7 @@
       "label": "azd-down",
       "command": "azd",
       "type": "shell",
-      "args": [
-        "down",
-        "--force",
-        "--purge"
-      ],
+      "args": ["down", "--force", "--purge"],
       "options": {
         "cwd": "${workspaceFolder}"
       },

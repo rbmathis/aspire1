@@ -1,6 +1,7 @@
 using aspire1.Web;
 using aspire1.Web.Components;
 using Azure.Identity;
+using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.FeatureManagement;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +18,7 @@ if (!string.IsNullOrEmpty(appConfigEndpoint))
         options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
                .UseFeatureFlags(featureFlagOptions =>
                {
-                   featureFlagOptions.CacheExpirationInterval = TimeSpan.FromSeconds(30);
+                   featureFlagOptions.SetRefreshInterval(TimeSpan.FromSeconds(30));
                    // Use sentinel key for cache refresh
                    featureFlagOptions.Select("*", builder.Environment.EnvironmentName);
                });
