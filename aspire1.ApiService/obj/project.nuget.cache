@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "tBrpendFpNw=",
+  "dgSpecHash": "FHd51HGtZFs=",
   "success": true,
-  "projectFilePath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj",
+  "projectFilePath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\rmathis\\.nuget\\packages\\azure.core\\1.44.1\\azure.core.1.44.1.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\azure.data.appconfiguration\\1.4.1\\azure.data.appconfiguration.1.4.1.nupkg.sha512",

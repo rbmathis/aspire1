@@ -13,16 +13,25 @@ builder.AddServiceDefaults();
 var appConfigEndpoint = builder.Configuration["AppConfig:Endpoint"];
 if (!string.IsNullOrEmpty(appConfigEndpoint))
 {
-    builder.Configuration.AddAzureAppConfiguration(options =>
+    try
     {
-        options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
-               .UseFeatureFlags(featureFlagOptions =>
-               {
-                   featureFlagOptions.SetRefreshInterval(TimeSpan.FromSeconds(30));
-                   // Use sentinel key for cache refresh
-                   featureFlagOptions.Select("*", builder.Environment.EnvironmentName);
-               });
-    });
+        builder.Configuration.AddAzureAppConfiguration(options =>
+        {
+            options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
+                   .UseFeatureFlags(featureFlagOptions =>
+                   {
+                       featureFlagOptions.SetRefreshInterval(TimeSpan.FromSeconds(30));
+                       // Use sentinel key for cache refresh
+                       featureFlagOptions.Select("*", builder.Environment.EnvironmentName);
+                   });
+        });
+    }
+    catch (Exception ex)
+    {
+        // Log warning but continue - fall back to local appsettings.json
+        Console.WriteLine($"Warning: Could not connect to Azure App Configuration: {ex.Message}");
+        Console.WriteLine("Falling back to local feature flag configuration.");
+    }
 }
 
 // Add feature management
