@@ -21,7 +21,7 @@ declare -a features=(
 for feature_info in "${features[@]}"; do
     IFS=':' read -r name description enabled <<< "$feature_info"
     echo "  Setting feature flag: $name"
-    
+
     az appconfig feature set \
         --name "$APPCONFIG_NAME" \
         --feature "$name" \
@@ -29,7 +29,7 @@ for feature_info in "${features[@]}"; do
         --description "$description" \
         --yes \
         >/dev/null 2>&1
-    
+
     if [ $? -eq 0 ]; then
         if [ "$enabled" = "true" ]; then
             echo "    ✅ Enabled - $name [$ENVIRONMENT]"

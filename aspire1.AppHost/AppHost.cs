@@ -12,6 +12,7 @@ var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("APP_VERSION", version)
     .WithEnvironment("COMMIT_SHA", commitSha)
+    .WithReference(appConfig)
     .WithAnnotation(new ContainerImageAnnotation
     {
         Registry = builder.Configuration["CONTAINER_REGISTRY"],

@@ -17,22 +17,22 @@ if (-not $AppConfigName) {
 # Create feature flags if they don't exist
 $features = @(
     @{
-        name = "WeatherForecast"
+        name        = "WeatherForecast"
         description = "Enable weather forecast feature"
-        enabled = $true
+        enabled     = $true
     },
     @{
-        name = "DetailedHealth"
+        name        = "DetailedHealth"
         description = "Enable detailed health endpoints with version metadata"
-        enabled = $true
+        enabled     = $true
     }
 )
 
 foreach ($feature in $features) {
     Write-Host "  Setting feature flag: $($feature.name)" -ForegroundColor Gray
-    
+
     $label = if ($Environment) { $Environment } else { "Development" }
-    
+
     az appconfig feature set `
         --name $AppConfigName `
         --feature $feature.name `
@@ -40,11 +40,12 @@ foreach ($feature in $features) {
         --description $feature.description `
         --yes `
         2>&1 | Out-Null
-    
+
     if ($LASTEXITCODE -eq 0) {
         $status = if ($feature.enabled) { "✅ Enabled" } else { "⚙️  Disabled" }
         Write-Host "    $status - $($feature.name) [$label]" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "    ⚠️  Failed to set $($feature.name)" -ForegroundColor Yellow
     }
 }

@@ -1,9 +1,30 @@
 using System.Reflection;
+using Azure.Identity;
+using Microsoft.FeatureManagement;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
+
+// Add Azure App Configuration with feature flags
+var appConfigEndpoint = builder.Configuration["AppConfig:Endpoint"];
+if (!string.IsNullOrEmpty(appConfigEndpoint))
+{
+    builder.Configuration.AddAzureAppConfiguration(options =>
+    {
+        options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
+               .UseFeatureFlags(featureFlagOptions =>
+               {
+                   featureFlagOptions.CacheExpirationInterval = TimeSpan.FromSeconds(30);
+                   // Use sentinel key for cache refresh
+                   featureFlagOptions.Select("*", builder.Environment.EnvironmentName);
+               });
+    });
+}
+
+// Add feature management
+builder.Services.AddFeatureManagement();
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
@@ -24,6 +45,12 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 
+// Enable Azure App Configuration middleware for dynamic refresh
+if (!string.IsNullOrEmpty(builder.Configuration["AppConfig:Endpoint"]))
+{
+    app.UseAzureAppConfiguration();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -33,8 +60,17 @@ string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "
 
 app.MapGet("/", () => "API service is running. Navigate to /weatherforecast to see sample data.");
 
-app.MapGet("/weatherforecast", () =>
+app.MapGet("/weatherforecast", async (IFeatureManager featureManager) => (IFeatureManager featureManager) =>
 {
+    // Check if feature is enabled
+    if (!await featureManager.IsEnabledAsync("WeatherForecast"))
+    {
+        return Results.Json(
+            new { error = "Weather forecast feature is currently disabled" },
+            statusCode: 503
+        );
+    }
+
     var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
@@ -43,7 +79,7 @@ app.MapGet("/weatherforecast", () =>
             summaries[Random.Shared.Next(summaries.Length)]
         ))
         .ToArray();
-    return forecast;
+    return Results.Ok(forecast);
 })
 .WithName("GetWeatherForecast");
 
@@ -59,15 +95,29 @@ app.MapGet("/version", () => new
 .WithName("GetVersion");
 
 // Enhanced health with version for OpenTelemetry correlation
-// Enhanced health with version for OpenTelemetry correlation
-app.MapGet("/health/detailed", () => new
+app.MapGet("/health/detailed", async (IFeatureManager featureManager) =>
 {
-    status = "healthy",
-    version,
-    commitSha,
-    service = "apiservice",
-    timestamp = DateTime.UtcNow,
-    uptime = Environment.TickCount64 / 1000.0 // seconds
+    var showDetailed = await featureManager.IsEnabledAsync("DetailedHealth");
+    
+    if (showDetailed)
+    {
+        return Results.Ok(new
+        {
+            status = "healthy",
+            version,
+            commitSha,
+            service = "apiservice",
+            timestamp = DateTime.UtcNow,
+            uptime = Environment.TickCount64 / 1000.0,
+            features = new
+            {
+                detailedHealth = true,
+                weatherForecast = await featureManager.IsEnabledAsync("WeatherForecast")
+            }
+        });
+    }
+    
+    return Results.Ok(new { status = "healthy" });
 })
 .WithName("GetDetailedHealth");
 app.MapDefaultEndpoints();
