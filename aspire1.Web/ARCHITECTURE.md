@@ -521,6 +521,326 @@ azd env get-values | findstr apiservice
 - Verify `WeatherApiClient` is registered in DI container
 - Check for exceptions in API service logs
 
+## ✅ Best Practices vs ❌ Anti-Patterns
+
+### 1. Service Discovery
+
+#### ❌ BAD: Hard-coded API URL
+```csharp
+builder.Services.AddHttpClient<WeatherApiClient>(client =>
+{
+    client.BaseAddress = new("https://my-api-service.azurecontainerapps.io");
+});
+```
+**Why it's bad:** Environment-specific URLs, breaks local dev, no failover, manual DNS updates
+
+#### ✅ GOOD: Service discovery with scheme preference (Current implementation)
+```csharp
+builder.Services.AddHttpClient<WeatherApiClient>(client =>
+{
+    // "apiservice" resolves via Aspire service discovery
+    client.BaseAddress = new("https+http://apiservice");
+});
+```
+**Why it's good:** Works in all environments, automatic DNS resolution, HTTPS preferred, HTTP fallback
+
+---
+
+### 2. HTTP Client Registration
+
+#### ❌ BAD: Manual HttpClient instantiation
+```csharp
+public class WeatherApiClient
+{
+    private readonly HttpClient _client = new(); // Don't do this!
+    
+    public WeatherApiClient()
+    {
+        _client.BaseAddress = new("http://apiservice");
+    }
+}
+```
+**Why it's bad:** Socket exhaustion, no resilience, no service discovery, no telemetry
+
+#### ✅ GOOD: Typed client with DI (Current implementation)
+```csharp
+// Program.cs
+builder.Services.AddHttpClient<WeatherApiClient>(client =>
+{
+    client.BaseAddress = new("https+http://apiservice");
+});
+
+// WeatherApiClient.cs
+public class WeatherApiClient(HttpClient httpClient)
+{
+    // Primary constructor injection
+    public async Task<WeatherForecast[]> GetWeatherAsync(...)
+    {
+        return await httpClient.GetFromJsonAsAsyncEnumerable<WeatherForecast>(...);
+    }
+}
+```
+**Why it's good:** IHttpClientFactory manages lifetime, resilience via ServiceDefaults, telemetry built-in
+
+---
+
+### 3. HTTP Resilience
+
+#### ❌ BAD: Raw HttpClient with no retry logic
+```csharp
+builder.Services.AddHttpClient<WeatherApiClient>(client =>
+{
+    client.BaseAddress = new("https+http://apiservice");
+}); // No resilience handlers
+```
+**Why it's bad:** Transient failures crash UI, no circuit breaker, no timeout protection
+
+#### ✅ GOOD: ServiceDefaults auto-configures resilience (Current implementation)
+```csharp
+builder.AddServiceDefaults(); // ← Adds standard resilience handler to ALL HttpClients
+
+// Resilience policies applied automatically:
+// - Retry: 3 attempts, exponential backoff
+// - Circuit Breaker: Opens after 5 consecutive failures
+// - Timeout: 10 seconds per request
+```
+**Why it's good:** Transient failure recovery, prevents cascading failures, consistent across services
+
+---
+
+### 4. Blazor Streaming & Caching
+
+#### ❌ BAD: No caching or streaming
+```razor
+@page "/weather"
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await WeatherApi.GetWeatherAsync();
+        // Every navigation = new API call, no streaming, slow initial render
+    }
+}
+```
+**Why it's bad:** Repeated API calls, slow perceived performance, server load
+
+#### ✅ GOOD: StreamRendering + OutputCache (Current implementation)
+```razor
+@page "/weather"
+@attribute [StreamRendering(true)]
+@attribute [OutputCache(Duration = 5)]
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await WeatherApi.GetWeatherAsync();
+        // Streams UI incrementally, caches for 5 seconds
+    }
+}
+```
+**Why it's good:** Fast initial render, reduced API calls, better UX, lower server load
+
+---
+
+### 5. Async Enumerable Pattern
+
+#### ❌ BAD: Buffering entire response in memory
+```csharp
+public async Task<WeatherForecast[]> GetWeatherAsync(...)
+{
+    var response = await httpClient.GetFromJsonAsync<WeatherForecast[]>("/weatherforecast");
+    return response!; // Loads entire array before processing
+}
+```
+**Why it's bad:** High memory usage for large datasets, no streaming benefits, blocks thread
+
+#### ✅ GOOD: Streaming with IAsyncEnumerable (Current implementation)
+```csharp
+public async Task<WeatherForecast[]> GetWeatherAsync(int maxItems = 10, CancellationToken cancellationToken = default)
+{
+    List<WeatherForecast>? forecasts = null;
+
+    await foreach (var forecast in httpClient.GetFromJsonAsAsyncEnumerable<WeatherForecast>("/weatherforecast", cancellationToken))
+    {
+        if (forecasts?.Count >= maxItems)
+        {
+            break; // Stop early if maxItems reached
+        }
+        if (forecast is not null)
+        {
+            forecasts ??= [];
+            forecasts.Add(forecast);
+        }
+    }
+
+    return forecasts?.ToArray() ?? [];
+}
+```
+**Why it's good:** Memory efficient, can stop early, supports cancellation, streams data
+
+---
+
+### 6. Blazor Component State Management
+
+#### ❌ BAD: Static state or singletons
+```csharp
+public class WeatherService
+{
+    private static WeatherForecast[]? _cachedData; // Don't do this in Blazor Server!
+    
+    public async Task<WeatherForecast[]> GetWeatherAsync()
+    {
+        if (_cachedData != null) return _cachedData;
+        _cachedData = await FetchData();
+        return _cachedData;
+    }
+}
+```
+**Why it's bad:** State shared across all users/circuits, memory leaks, race conditions, security risk
+
+#### ✅ GOOD: Scoped services + component-level state (Current implementation)
+```razor
+@inject WeatherApiClient WeatherApi
+
+@code {
+    private WeatherForecast[]? forecasts; // Component-scoped
+
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await WeatherApi.GetWeatherAsync();
+    }
+}
+```
+**Why it's good:** Isolated per circuit, no cross-user contamination, automatic cleanup, thread-safe
+
+---
+
+### 7. Output Caching Configuration
+
+#### ❌ BAD: No caching or app-level only
+```csharp
+builder.Services.AddOutputCache(); // Registered but never used
+```
+**Why it's bad:** Misses opportunity to reduce API calls, inconsistent performance
+
+#### ✅ GOOD: Page-level caching (Current implementation)
+```csharp
+// Program.cs
+builder.Services.AddOutputCache();
+app.UseOutputCache();
+
+// Weather.razor
+@attribute [OutputCache(Duration = 5)]
+```
+**Why it's good:** Reduced API load, configurable per-page, balances freshness vs performance
+
+---
+
+### 8. Error Boundaries
+
+#### ❌ BAD: No error handling
+```razor
+@page "/weather"
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await WeatherApi.GetWeatherAsync(); // Unhandled exceptions crash circuit
+    }
+}
+```
+**Why it's bad:** Entire app crashes on API failure, poor user experience, no recovery
+
+#### ✅ GOOD: Error.razor page + exception handler (Current implementation)
+```csharp
+// Program.cs
+app.UseExceptionHandler("/Error", createScopeForErrors: true);
+
+// Error.razor exists to catch unhandled exceptions
+```
+**Why it's good:** Graceful degradation, user-friendly error page, preserves circuit, logs exceptions
+
+---
+
+### 9. HTTPS & Security
+
+#### ❌ BAD: Allow HTTP in production
+```csharp
+// No HSTS, no HTTPS redirection
+app.Run();
+```
+**Why it's bad:** Man-in-the-middle attacks, session hijacking, SignalR may not work
+
+#### ✅ GOOD: HTTPS redirection + HSTS (Current implementation)
+```csharp
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts(); // 30 days default
+}
+
+app.UseHttpsRedirection(); // Force HTTPS
+```
+**Why it's good:** Enforces encryption, prevents downgrade attacks, browser caching, SignalR-compatible
+
+---
+
+### 10. Antiforgery Protection
+
+#### ❌ BAD: No CSRF protection
+```csharp
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+// No antiforgery middleware
+```
+**Why it's bad:** Vulnerable to CSRF attacks, form spoofing, session hijacking
+
+#### ✅ GOOD: Antiforgery middleware (Current implementation)
+```csharp
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+app.UseAntiforgery(); // Required for Blazor Server forms
+```
+**Why it's good:** CSRF protection, validates tokens, secure form submissions, Blazor requirement
+
+---
+
+### 11. Service Registration Order
+
+#### ❌ BAD: ServiceDefaults after specific registrations
+```csharp
+builder.Services.AddRazorComponents();
+builder.Services.AddHttpClient<WeatherApiClient>(...);
+builder.AddServiceDefaults(); // Too late! Won't configure existing HttpClient
+```
+**Why it's bad:** ServiceDefaults can't apply to already-registered services, inconsistent config
+
+#### ✅ GOOD: ServiceDefaults first (Current implementation)
+```csharp
+builder.AddServiceDefaults(); // First! Configures HttpClient defaults
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+builder.Services.AddHttpClient<WeatherApiClient>(...); // Inherits defaults
+```
+**Why it's good:** All HttpClients get resilience + service discovery, consistent configuration
+
+---
+
+### 12. Static Asset Handling
+
+#### ❌ BAD: Old UseStaticFiles
+```csharp
+app.UseStaticFiles(); // .NET 8 pattern
+```
+**Why it's bad:** Misses .NET 9+ optimizations (fingerprinting, compression)
+
+#### ✅ GOOD: MapStaticAssets (Current implementation)
+```csharp
+app.MapStaticAssets(); // .NET 9+ optimization
+```
+**Why it's good:** Automatic fingerprinting, better caching, CDN-friendly, performance boost
+
 ## 📚 Related Documentation
 
 - [Root Architecture](../ARCHITECTURE.md)

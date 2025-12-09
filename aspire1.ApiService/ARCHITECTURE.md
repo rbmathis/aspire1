@@ -433,6 +433,245 @@ az containerapp logs show \
 - Check `MapDefaultEndpoints()` is called in `Program.cs`
 - Verify health check is configured in ACA (via AppHost `WithHttpHealthCheck()`)
 
+## ✅ Best Practices vs ❌ Anti-Patterns
+
+### 1. Version Extraction
+
+#### ❌ BAD: Hard-coded version string
+```csharp
+var version = "1.0.0"; // Stale immediately, manual updates required
+```
+**Why it's bad:** Version drifts from actual deployment, no git correlation, manual maintenance
+
+#### ✅ GOOD: Assembly metadata + environment fallback (Current implementation)
+```csharp
+var version = builder.Configuration["APP_VERSION"] ??
+              Assembly.GetExecutingAssembly()
+                      .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                      ?.InformationalVersion ?? "unknown";
+var commitSha = builder.Configuration["COMMIT_SHA"] ??
+                Environment.GetEnvironmentVariable("GITHUB_SHA")?[..7] ?? "local";
+```
+**Why it's good:** Multiple fallback sources, MinVer auto-updates assembly version, git SHA for traceability
+
+---
+
+### 2. Health Check Endpoints
+
+#### ❌ BAD: No version metadata
+```csharp
+app.MapGet("/health", () => "Healthy");
+```
+**Why it's bad:** Can't correlate issues with deployed version, no uptime tracking, minimal diagnostics
+
+#### ✅ GOOD: Enhanced health with version (Current implementation)
+```csharp
+app.MapGet("/health/detailed", () => new
+{
+    status = "healthy",
+    version,
+    commitSha,
+    service = "apiservice",
+    timestamp = DateTime.UtcNow,
+    uptime = Environment.TickCount64 / 1000.0
+})
+.WithName("GetDetailedHealth");
+```
+**Why it's good:** OpenTelemetry correlation, deployment tracking, uptime monitoring, troubleshooting context
+
+---
+
+### 3. Secrets Management
+
+#### ❌ BAD: Connection string in appsettings.json
+```json
+{
+  "ConnectionStrings": {
+    "MyDb": "Server=prod.db.com;User=sa;Password=P@ssw0rd123;"
+  }
+}
+```
+**Why it's bad:** Secrets in source control, exposed in logs, no rotation, compliance violation
+
+#### ✅ GOOD: Key Vault reference (aspire1 pattern)
+```json
+{
+  "ConnectionStrings": {
+    "MyDb": ""  // Empty placeholder
+  }
+}
+```
+```yaml
+# Environment variable in ACA (set by azd hooks)
+ConnectionStrings__MyDb: "@Microsoft.KeyVault(SecretUri=https://kv-aspire1.vault.azure.net/secrets/mydb-connection)"
+```
+**Why it's good:** Zero secrets in code, managed identity auth, automatic rotation, audit trail
+
+---
+
+### 4. Service Defaults Registration
+
+#### ❌ BAD: Manual OpenTelemetry setup in every service
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddAspNetCoreInstrumentation())
+    .WithMetrics(metrics => metrics.AddAspNetCoreInstrumentation());
+// Repeated in every service, inconsistent config
+```
+**Why it's bad:** Code duplication, config drift, missing instrumentation, maintenance nightmare
+
+#### ✅ GOOD: ServiceDefaults extension (Current implementation)
+```csharp
+builder.AddServiceDefaults(); // One line, consistent everywhere
+```
+**Why it's good:** DRY principle, consistent observability, includes resilience + service discovery, centralized updates
+
+---
+
+### 5. Endpoint Naming & Documentation
+
+#### ❌ BAD: No endpoint names, no OpenAPI
+```csharp
+app.MapGet("/weatherforecast", () => { /* ... */ });
+```
+**Why it's bad:** Can't reference endpoint by name, no auto-generated docs, hard to maintain
+
+#### ✅ GOOD: Named endpoints with OpenAPI (Current implementation)
+```csharp
+app.MapGet("/weatherforecast", () => { /* ... */ })
+    .WithName("GetWeatherForecast");
+
+app.MapGet("/version", () => new { version, commitSha })
+    .WithName("GetVersion");
+```
+**Why it's good:** Endpoint referencing in tests, OpenAPI generation, link generation, route constraints
+
+---
+
+### 6. Configuration Fallback Strategy
+
+#### ❌ BAD: Single source, crashes if missing
+```csharp
+var version = builder.Configuration["APP_VERSION"]; // NullReferenceException in local dev
+```
+**Why it's bad:** Breaks local development, no graceful degradation, environment-specific
+
+#### ✅ GOOD: Multiple fallbacks with defaults (Current implementation)
+```csharp
+var version = builder.Configuration["APP_VERSION"] ??           // ACA/Production
+              Assembly.GetExecutingAssembly()
+                      .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                      ?.InformationalVersion ??                  // MinVer build
+              "unknown";                                          // Fallback
+```
+**Why it's good:** Works in all environments, graceful degradation, clear priority order
+
+---
+
+### 7. Exception Handling
+
+#### ❌ BAD: Generic try-catch everywhere
+```csharp
+app.MapGet("/weatherforecast", () =>
+{
+    try {
+        return GetWeather();
+    } catch (Exception ex) {
+        return Results.Problem("Error");
+    }
+});
+```
+**Why it's bad:** Swallows valuable error details, breaks OpenTelemetry exception tracking, inconsistent responses
+
+#### ✅ GOOD: Global exception handler (Current implementation)
+```csharp
+builder.Services.AddProblemDetails(); // RFC 7807 standard
+app.UseExceptionHandler(); // Centralized exception handling
+```
+**Why it's good:** Consistent error format, OpenTelemetry captures exceptions, includes trace ID, production-safe
+
+---
+
+### 8. Minimal API Organization
+
+#### ❌ BAD: Logic in endpoint handlers
+```csharp
+app.MapGet("/weatherforecast", () =>
+{
+    // 50 lines of business logic here
+    var data = dbContext.Weather.Where(x => x.Date > DateTime.Now).ToList();
+    return data.Select(x => new WeatherForecast { /* ... */ });
+});
+```
+**Why it's bad:** Untestable, violates SRP, hard to maintain, couples HTTP to business logic
+
+#### ✅ GOOD: Thin endpoints, extracted logic (Current implementation uses simple logic)
+```csharp
+app.MapGet("/weatherforecast", () =>
+{
+    var forecast = Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast(
+            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Random.Shared.Next(-20, 55),
+            summaries[Random.Shared.Next(summaries.Length)]
+        ))
+        .ToArray();
+    return forecast;
+})
+.WithName("GetWeatherForecast");
+```
+**Why it's good:** Testable logic, clear separation, easy to extract to service layer when needed
+
+---
+
+### 9. OpenTelemetry Trace Filtering
+
+#### ❌ BAD: Trace everything including health checks
+```csharp
+.WithTracing(tracing =>
+{
+    tracing.AddAspNetCoreInstrumentation(); // No filtering
+})
+```
+**Why it's bad:** Noisy traces, high ingestion costs, health check spam obscures real issues
+
+#### ✅ GOOD: Filter health endpoints (ServiceDefaults implementation)
+```csharp
+.WithTracing(tracing =>
+{
+    tracing.AddAspNetCoreInstrumentation(options =>
+        options.Filter = context =>
+            !context.Request.Path.StartsWithSegments("/health")
+            && !context.Request.Path.StartsWithSegments("/alive")
+    )
+})
+```
+**Why it's good:** Clean traces, lower costs, focuses on business operations, reduces noise
+
+---
+
+### 10. Environment-Specific Configuration
+
+#### ❌ BAD: Conditional logic based on environment
+```csharp
+if (app.Environment.IsProduction())
+{
+    app.MapOpenApi(); // Wrong! OpenAPI in prod = security risk
+}
+```
+**Why it's bad:** Exposes API schema in production, security vulnerability, manual maintenance
+
+#### ✅ GOOD: Development-only features (Current implementation)
+```csharp
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi(); // Only in dev
+}
+
+app.UseExceptionHandler(); // Always on (production-safe details)
+```
+**Why it's good:** Secure by default, explicit opt-in for dev tools, follows least privilege
+
 ## 📚 Related Documentation
 
 - [Root Architecture](../ARCHITECTURE.md)
