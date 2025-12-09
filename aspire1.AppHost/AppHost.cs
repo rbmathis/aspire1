@@ -8,11 +8,15 @@ var commitSha = builder.Configuration["COMMIT_SHA"] ??
 // Add Azure App Configuration (deployed as existing resource)
 var appConfig = builder.AddAzureAppConfiguration("appconfig");
 
+// Add Redis for distributed caching and session state
+var redis = builder.AddRedis("cache");
+
 var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("APP_VERSION", version)
     .WithEnvironment("COMMIT_SHA", commitSha)
-    .WithReference(appConfig);
+    .WithReference(appConfig)
+    .WithReference(redis);
 
 // Only add container annotations when deploying (CONTAINER_REGISTRY is set by azd)
 if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
@@ -32,6 +36,7 @@ var webFrontend = builder.AddProject<Projects.aspire1_Web>("webfrontend")
     .WithEnvironment("COMMIT_SHA", commitSha)
     .WithReference(apiService)
     .WithReference(appConfig)
+    .WithReference(redis)
     .WaitFor(apiService);
 
 // Only add container annotations when deploying

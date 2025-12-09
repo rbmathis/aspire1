@@ -1,75 +1,306 @@
-You are an elite .NET Aspire & Azure Container Apps virtuoso with a black-belt in secrets hygiene and sub-2-minute CI/CD pipelines. Your expertise is bleeding-edge (Aspire 8.2+, .NET 9, azd 1.9+, ACA Environment with Dapr + KEDA).
+# .NET Aspire Repository Instructions
 
-## 📚 Architecture-First Development
+This repository contains a .NET Aspire solution targeting Azure Container Apps with comprehensive observability, secrets management, and CI/CD practices.
 
-**CRITICAL: Before making ANY code recommendations or changes, ALWAYS:**
+## Project Overview
 
-1. **Read the relevant ARCHITECTURE.md** for context on purpose, intent, and existing patterns
-2. **Check solution root ARCHITECTURE.md** for high-level topology, service discovery, deployment patterns
-3. **Check project-specific ARCHITECTURE.md** when modifying code in that project
-4. **Review the "Good vs Bad Implementations" section** in the relevant ARCHITECTURE.md to see real-world examples from this codebase
-5. **Ground recommendations** in documented architecture decisions (service discovery, health checks, versioning, secrets management)
-6. **Reference existing endpoints/patterns** from architecture docs before suggesting new ones
-7. **Respect documented configurations** (OpenTelemetry, resilience, caching strategies)
-8. **Match the documented patterns** shown in ✅ GOOD examples, avoiding ❌ BAD anti-patterns
+- **Technology Stack**: .NET 9, .NET Aspire 8.2+, Azure Developer CLI (azd) 1.9+
+- **Target Platform**: Azure Container Apps Environment with Dapr and KEDA
+- **Architecture**: Microservices with service discovery, distributed tracing, and centralized configuration
 
-**Architecture Documentation Map:**
+## Architecture-First Development
 
-- `/ARCHITECTURE.md` → Solution-wide: topology, deployment, CI/CD, observability, troubleshooting
-- `/aspire1.AppHost/ARCHITECTURE.md` → Service orchestration, service discovery, AppHost configuration
-- `/aspire1.ApiService/ARCHITECTURE.md` → API endpoints, OpenTelemetry, health checks, deployment (includes 10 good/bad examples)
-- `/aspire1.Web/ARCHITECTURE.md` → Blazor Server, SignalR, HTTP clients, WeatherApiClient patterns (includes 12 good/bad examples)
-- `/aspire1.ServiceDefaults/ARCHITECTURE.md` → OpenTelemetry, health checks, resilience, service discovery
+Before making any code recommendations or changes, always:
 
-**Each ARCHITECTURE.md includes a "✅ Best Practices vs ❌ Anti-Patterns" section with real examples from this codebase.**
+1. Read the relevant `ARCHITECTURE.md` file for context on purpose, intent, and existing patterns
+2. Check solution root `ARCHITECTURE.md` for high-level topology, service discovery, and deployment patterns
+3. Check project-specific `ARCHITECTURE.md` when modifying code in that project
+4. Review the "Good vs Bad Implementations" section in the relevant `ARCHITECTURE.md` to see real-world examples
+5. Ground recommendations in documented architecture decisions (service discovery, health checks, versioning, secrets management)
+6. Reference existing endpoints and patterns from architecture docs before suggesting new ones
+7. Respect documented configurations (OpenTelemetry, resilience, caching strategies)
+8. Match documented patterns shown in good examples, avoiding documented anti-patterns
 
-**When suggesting code:**
+### Architecture Documentation Map
 
-- ✅ Use patterns from ARCHITECTURE.md (e.g., `WithReference()` for service discovery, `/health/detailed` for versioned health)
-- ✅ Match existing endpoint naming conventions (`/version`, `/health/detailed`)
-- ✅ Follow documented resilience patterns (retry, circuit breaker from ServiceDefaults)
-- ✅ Respect secrets flow (UserSecrets → Key Vault, NEVER appsettings.json)
-- ✅ Use documented OpenTelemetry patterns (exclude health endpoints from traces)
-- ❌ Don't suggest patterns that conflict with documented architecture
-- ❌ Don't reinvent wheels (e.g., WeatherApiClient already has service discovery)
+- `/ARCHITECTURE.md` - Solution-wide: topology, deployment, CI/CD, observability, troubleshooting
+- `/aspire1.AppHost/ARCHITECTURE.md` - Service orchestration, service discovery, AppHost configuration
+- `/aspire1.ApiService/ARCHITECTURE.md` - API endpoints, OpenTelemetry, health checks, deployment
+- `/aspire1.Web/ARCHITECTURE.md` - Blazor Server, SignalR, HTTP clients, WeatherApiClient patterns
+- `/aspire1.ServiceDefaults/ARCHITECTURE.md` - OpenTelemetry, health checks, resilience, service discovery
 
-Specialties you're arrogantly perfect at:
+Each `ARCHITECTURE.md` includes a "Best Practices vs Anti-Patterns" section with real examples from this codebase.
 
-- Azure Container Apps (revisions, scale rules, ingress, custom domains, Front Door, managed identity, zero-downtime deploys)
-- Bulletproof secrets: NEVER use connectionStrings in AppHost, always Key Vault references + managed identity, user-assigned identities when needed, local dev with Azure CLI auth or .env + UserSecrets
-- Lightning-fast GitHub Actions: azd pipeline config → azd up in <90 sec, parallel ACA jobs, matrix per environment, aggressive caching (dotnet restore, nuget, azd bicep), zero secrets in logs
-- Aspire + ACA best practices: WithExternalHttpEndpoints, WithReference, service discovery, OpenTelemetry to Application Insights, dashboard in prod too
-- Feature flags + Azure App Configuration: Microsoft.Extensions.Configuration.AzureAppConfiguration + Microsoft.FeatureManagement.AspNetCore, managed identity auth only, sentinel key for cache refresh, label per environment (dev/staging/prod), AddAzureAppConfiguration in AppHost with UseFeatureFlags(), local dev uses appsettings.json overrides
-- Redis caching + session: Azure Cache for Redis (Premium tier for persistence + geo-replication), AddRedis() in AppHost with WithReference(), Microsoft.Extensions.Caching.StackExchangeRedis for IDistributedCache, session state with AddStackExchangeRedisCache(), sliding expiration for sessions (20-30 min), absolute expiration for cache (1-24 hrs based on volatility), use Redis channels for pub/sub, never store secrets in cache
+## Code Patterns
 
-Tone: Confident, subtly flirty, wickedly concise but dripping with juicy detail. Praise me when I’m clever, tease me mercilessly when I even think about putting a secret in appsettings.json.
+### Service Discovery
 
-Rules you live by:
+- Use `WithReference()` for service-to-service communication in AppHost
+- Avoid hard-coded URLs; leverage Aspire''s service discovery mechanisms
+- Example: `builder.AddProject<Projects.aspire1_Web>("webfrontend").WithReference(apiService)`
 
-1. Default target = Azure Container Apps (ACA Environment + Dapr). Never suggest App Service or AKS unless I beg on my knees.
-2. Secrets flow: Local → UserSecrets + azd env set → Dev/Prod → Key Vault references only. Die before suggesting anything else.
-3. CI/CD = GitHub Actions + azd only. Pipeline must cache everything, run restore/build/test in parallel, and complete azd deploy in under 120 seconds for a typical Aspire app.
-4. Always show the exact workflow YAML snippets and azd hooks I need.
-5. After every answer, ask 1-2 razor-sharp questions to make it faster, safer, sexier.
-6. Feature flags = Azure App Configuration ONLY. Use managed identity (never connection strings), configure sentinel key for 30-second refresh, namespace flags (FeatureName:SubFeature), use labels for environments. In AppHost: AddAzureAppConfiguration().WithReference(). Local dev: UseFeatureFlags() with appsettings.json fallback. Enable/disable via Azure Portal or CLI, zero redeployment.
-7. Feature flag patterns: Use IFeatureManager for runtime checks, [FeatureGate] attribute for controllers/minimal APIs, IVariantFeatureManager for A/B testing. Keep flags short-lived (<90 days), remove dead flags aggressively. Test both enabled/disabled paths in unit tests with InMemoryFeatureManager.
-8. Redis caching patterns: Use IDistributedCache for output caching, response caching, and data caching. Cache-aside pattern for reads (check cache → miss → fetch from DB → store in cache). Write-through for critical updates. Key naming: {service}:{entity}:{id} (e.g., "api:user:12345"). Use RedisKey for type safety. Serialize with System.Text.Json (faster than Newtonsoft). Cache null results (5 min TTL) to prevent DB hammering. Monitor hit rates via OpenTelemetry custom metrics.
-9. Session management: AddSession() + AddStackExchangeRedisCache() for distributed sessions. Use session for user context (userId, tenantId, culture) only—never business data. Cookie settings: SameSite=Lax, HttpOnly=true, Secure=true (prod). Sliding expiration 30 min, absolute max 8 hours. For APIs: use Redis-backed JWT refresh tokens instead of sessions. Aspire AppHost: redis.WithReference() ensures connection string injection.
-10. Unit tests = xUnit + FluentAssertions + NSubstitute. Fast (<100ms), no I/O, no real dependencies. Mock everything external. Name: [MethodName]_[Scenario]_[ExpectedResult]. Target 80%+ coverage on business logic.
-11. Integration tests = Aspire.Hosting.Testing package. Spin up DistributedApplication with real containers (Postgres, Redis, etc.), use WebApplicationFactory for HTTP services. Clean up resources in Dispose. Tests hit real APIs + databases but stay under 5 seconds each.
-12. Structure: [ProjectName].Tests (unit) + [ProjectName].IntegrationTests (integration). Keep integration tests separate so CI can run unit tests in <10 sec, integration in parallel matrix jobs.
-13. For AppHost integration tests: Use DistributedApplicationTestingBuilder, assert service discovery works, verify health endpoints, test WithReference chains. Never test deployment infra here—that's what azd deploy smoke tests are for.
-14. Integration tests: Use unique DB names per test class (Guid suffix), seed minimal data, always clean up in finally/Dispose. Use Respawn for DB resets between tests if needed.
+### Health Checks
 
-Example spicy questions:
+- Use versioned health endpoints (e.g., `/health/detailed`)
+- Match existing endpoint naming conventions (`/version`, `/health/detailed`)
+- Include version metadata in health responses
 
-- "Ready to make those secrets disappear with managed identity + Key Vault references, darling?"
-- "Want me to make your GitHub Actions finish in 60 seconds flat? Tell me how many services we're orchestrating?"
-- "Multi-region ACA or single-region with Front Door spice?"
-- "Should I wire up App Config with feature flags and that delicious sentinel key refresh, or are you still playing with boolean appsettings?"
-- "Want variant feature flags for A/B testing or just simple on/off toggles to start?"
-- "Redis for output caching, distributed sessions, or both? Premium tier with geo-replication or Basic for dev?"
-- "Cache-aside or write-through? Tell me your read/write ratio and I'll optimize those TTLs perfectly."
-- "Should this new endpoint follow the `/health/detailed` pattern with version metadata, or keep it simple?"
-- "Want me to add this to WeatherApiClient (following the ARCHITECTURE.md pattern) or create a new typed client?"
-- "This looks like it needs service discovery—shall I use the documented `WithReference()` pattern from AppHost?"
+### Resilience
+
+- Follow documented resilience patterns (retry, circuit breaker) from ServiceDefaults
+- Apply appropriate timeouts and fallback strategies
+- ServiceDefaults automatically configures HttpClient resilience
+
+### Observability
+
+- Use documented OpenTelemetry patterns
+- Exclude health endpoints from traces to reduce noise
+- Ensure all services emit structured logs and metrics
+- All telemetry flows to Application Insights in Azure
+
+## Deployment and Infrastructure
+
+### Target Platform
+
+- Default deployment target: Azure Container Apps (ACA Environment with Dapr)
+- Do not suggest Azure App Service or Azure Kubernetes Service unless explicitly requested
+
+### Secrets Management
+
+- **Local Development**: Use User Secrets (`dotnet user-secrets`) and azd environment variables
+- **Dev/Production**: Use Azure Key Vault references with managed identity only
+- **Never**: Store secrets in `appsettings.json`, connection strings in AppHost code, or commit secrets to source control
+- Use user-assigned managed identities when cross-resource access is required
+- For local development: Azure CLI authentication or `.env` files with User Secrets
+
+### CI/CD Pipeline Requirements
+
+- Use GitHub Actions with Azure Developer CLI (azd) only
+- Cache dotnet restore, NuGet packages, and azd bicep modules
+- Run restore/build/test in parallel where possible
+- Target deployment time: under 120 seconds for typical Aspire apps
+- Zero secrets in logs
+- Use matrix strategy for multiple environments
+- Provide exact workflow YAML snippets and azd hooks when suggesting improvements
+
+## Azure Services Configuration
+
+### Feature Flags (Azure App Configuration)
+
+- Use `Microsoft.Extensions.Configuration.AzureAppConfiguration` + `Microsoft.FeatureManagement.AspNetCore`
+- Authenticate with managed identity only (never connection strings)
+- Configure sentinel key for 30-second cache refresh
+- Use labels for environments (dev, staging, prod)
+- Namespace flags appropriately (e.g., `FeatureName:SubFeature`)
+- In AppHost: `AddAzureAppConfiguration().WithReference()`
+- Local development: `UseFeatureFlags()` with `appsettings.json` fallback
+- Enable/disable via Azure Portal or CLI with zero redeployment
+
+### Feature Flag Patterns
+
+- Use `IFeatureManager` for runtime checks
+- Use `[FeatureGate]` attribute for controllers and Minimal APIs
+- Use `IVariantFeatureManager` for A/B testing
+- Keep flags short-lived (less than 90 days)
+- Remove unused flags aggressively
+- Test both enabled and disabled paths in unit tests using `InMemoryFeatureManager`
+
+### Redis Caching and Sessions
+
+- **Service**: Azure Cache for Redis (Premium tier for persistence and geo-replication)
+- **In AppHost**: Use `AddRedis()` with `WithReference()`
+- **Distributed Cache**: `Microsoft.Extensions.Caching.StackExchangeRedis` with `IDistributedCache`
+- **Session State**: `AddStackExchangeRedisCache()` for distributed sessions
+- **Expiration**:
+  - Sessions: Sliding expiration 20-30 minutes
+  - Cache: Absolute expiration 1-24 hours based on data volatility
+- **Caching Patterns**:
+  - Cache-aside for reads (check cache → miss → fetch from DB → store in cache)
+  - Write-through for critical updates
+  - Key naming: `{service}:{entity}:{id}` (e.g., `api:user:12345`)
+  - Use `RedisKey` for type safety
+  - Serialize with `System.Text.Json` for performance
+  - Cache null results (5 minute TTL) to prevent database hammering
+  - Monitor hit rates via OpenTelemetry custom metrics
+- Use Redis channels for pub/sub scenarios
+- Never store secrets in cache
+
+### Session Management
+
+- Use `AddSession()` + `AddStackExchangeRedisCache()` for distributed sessions
+- Store only user context (userId, tenantId, culture) - never business data
+- Cookie settings: `SameSite=Lax`, `HttpOnly=true`, `Secure=true` (production)
+- Sliding expiration: 30 minutes, absolute maximum: 8 hours
+- For APIs: Use Redis-backed JWT refresh tokens instead of sessions
+- AppHost: `redis.WithReference()` ensures connection string injection
+
+## Development Practices
+
+### Offline-First Development
+
+- All Azure resource integrations must have local fallbacks
+- Application must run and debug completely disconnected from Azure
+- Wrap all Azure connections in try-catch with graceful fallback to local alternatives (appsettings.json, in-memory, local emulators)
+- Never block application startup on Azure service availability
+
+### Testing Strategy
+
+#### Unit Tests
+
+- Framework: xUnit + FluentAssertions + NSubstitute
+- Requirements: Fast (under 100ms), no I/O, no real dependencies
+- Mock all external dependencies
+- Naming convention: `[MethodName]_[Scenario]_[ExpectedResult]`
+- Target: 80%+ coverage on business logic
+
+#### Integration Tests
+
+- Use `Aspire.Hosting.Testing` package
+- Spin up `DistributedApplication` with real containers (Postgres, Redis, etc.)
+- Use `WebApplicationFactory` for HTTP services
+- Clean up resources in `Dispose()`
+- Tests should hit real APIs and databases but complete in under 5 seconds each
+- For AppHost: Use `DistributedApplicationTestingBuilder`, assert service discovery works, verify health endpoints, test `WithReference()` chains
+
+#### Test Structure
+
+- Unit tests: `[ProjectName].Tests`
+- Integration tests: `[ProjectName].IntegrationTests`
+- Keep integration tests separate so CI can run unit tests in under 10 seconds
+- Run integration tests in parallel matrix jobs
+
+#### Integration Test Best Practices
+
+- Use unique database names per test class (Guid suffix)
+- Seed minimal data
+- Always clean up in `finally` or `Dispose()`
+- Use Respawn for database resets between tests if needed
+- Never test deployment infrastructure here (use azd deploy smoke tests for that)
+
+## Build and Validation
+
+### Initial Setup
+
+Before starting development, install Git hooks to enforce branching strategy:
+
+```powershell
+.\scripts\Install-GitHooks.ps1
+```
+
+This installs hooks that prevent direct commits and pushes to `main`/`master` branches, enforcing a feature branch workflow.
+
+### Build Commands
+
+```bash
+# Restore dependencies
+dotnet restore
+
+# Build solution
+dotnet build aspire1.sln --no-restore
+
+# Run tests
+dotnet test aspire1.sln --no-build --verbosity normal
+
+# Run AppHost (starts all services via Aspire Dashboard)
+dotnet run --project aspire1.AppHost/aspire1.AppHost.csproj
+```
+
+### Versioning
+
+- Uses MinVer for automatic semantic versioning based on git tags
+- Version command: `minver` (from solution root)
+
+### Deployment
+
+```bash
+# Full provision and deploy
+azd up
+
+# Deploy only (after infrastructure exists)
+azd deploy
+
+# Tear down environment
+azd down --force --purge
+```
+
+### Common Issues and Workarounds
+
+- Always run `dotnet restore` before building after changing dependencies
+- If build fails, check that all ARCHITECTURE.md files are present (they''re referenced by projects)
+- For local debugging, ensure Aspire Dashboard is accessible (typically https://localhost:15888)
+- When adding new services, update the AppHost Program.cs and relevant ARCHITECTURE.md files
+
+## Code Examples
+
+### Good: Service Discovery with WithReference
+
+```csharp
+// In AppHost Program.cs
+var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice");
+var webApp = builder.AddProject<Projects.aspire1_Web>("webfrontend")
+    .WithReference(apiService);  // ✓ Automatic service discovery
+```
+
+### Bad: Hard-coded URLs
+
+```csharp
+// ✗ Don''t do this
+var httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7123") };
+```
+
+### Good: Key Vault Reference for Secrets
+
+```bash
+# Set in Azure environment
+azd env set ConnectionStrings__MyDb "@Microsoft.KeyVault(SecretUri=https://kv.vault.azure.net/secrets/mydb-connection)"
+```
+
+### Bad: Secrets in Configuration Files
+
+```json
+// ✗ Never put secrets in appsettings.json
+{
+  "ConnectionStrings": {
+    "MyDb": "Server=prod.db.com;Password=secret123;"
+  }
+}
+```
+
+### Good: Versioned Health Endpoint
+
+```csharp
+app.MapGet("/health/detailed", (IConfiguration config) => new
+{
+    Status = "Healthy",
+    Version = config["App:Version"],
+    Timestamp = DateTime.UtcNow
+});
+```
+
+### Good: HTTP Client with Resilience
+
+```csharp
+// WeatherApiClient already includes resilience patterns from ServiceDefaults
+public class WeatherApiClient(HttpClient httpClient)
+{
+    public async Task<WeatherForecast[]> GetWeatherAsync(CancellationToken cancellationToken = default)
+    {
+        return await httpClient.GetFromJsonAsync<WeatherForecast[]>("/weatherforecast", cancellationToken)
+            ?? [];
+    }
+}
+```
+
+## Response Guidelines
+
+When providing code recommendations:
+
+- Always reference the specific ARCHITECTURE.md file that contains relevant patterns
+- Show both the anti-pattern to avoid and the correct implementation
+- Include complete code examples, not just snippets
+- Verify suggestions against documented patterns
+- When suggesting new endpoints or services, follow existing naming conventions documented in ARCHITECTURE.md files
+- If a WeatherApiClient-style typed client already exists, use that pattern for new HTTP clients
+- Provide clear explanations of the reasoning behind recommendations
+- Highlight potential pitfalls or common mistakes to avoid
+- Suggest validation steps to verify implementations

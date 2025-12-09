@@ -25,6 +25,17 @@ echo "🔧 Configuring git..."
 git config --global --add safe.directory /workspaces/aspire1 || true
 git config --global init.defaultBranch main || true
 
+# Install Git hooks
+echo "🪝 Installing Git hooks..."
+if [ -d "scripts/hooks" ]; then
+    mkdir -p .git/hooks
+    cp scripts/hooks/* .git/hooks/
+    chmod +x .git/hooks/*
+    echo "  ✅ Installed pre-commit and pre-push hooks"
+else
+    echo "  ⚠️  Warning: scripts/hooks directory not found"
+fi
+
 # Create local secrets directory
 echo "🔐 Setting up user secrets..."
 mkdir -p ~/.microsoft/usersecrets
@@ -38,6 +49,11 @@ dotnet --version
 echo "Azure CLI: $(az version -o tsv 2>/dev/null || echo 'Not installed')"
 echo "Azure Developer CLI: $(azd version 2>/dev/null || echo 'Not installed')"
 echo "MinVer: $(minver --version 2>/dev/null || echo 'Not installed')"
+echo ""
+echo "🔒 Git Protections:"
+echo "  • Pre-commit and pre-push hooks installed"
+echo "  • Direct commits/pushes to main/master are blocked"
+echo "  • Use feature branches for all development"
 echo ""
 echo "🎯 Quick start commands:"
 echo "  dotnet run --project aspire1.AppHost      # Start Aspire dashboard"

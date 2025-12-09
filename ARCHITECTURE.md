@@ -53,12 +53,14 @@ graph TB
 
 ## 📊 Component Matrix
 
-| Component                   | Type          | Port(s)          | Dependencies            | Health Endpoint               | Container Image                |
-| --------------------------- | ------------- | ---------------- | ----------------------- | ----------------------------- | ------------------------------ |
-| **aspire1.Web**             | Blazor Server | 8080, 8443       | aspire1.ApiService      | `/health`                     | `aspire1-web:{version}`        |
-| **aspire1.ApiService**      | Minimal API   | 8080, 8443       | aspire1.ServiceDefaults | `/health`, `/health/detailed` | `aspire1-apiservice:{version}` |
-| **aspire1.ServiceDefaults** | Class Library | N/A              | -                       | N/A                           | N/A                            |
-| **aspire1.AppHost**         | Orchestrator  | 5000 (dashboard) | All projects            | N/A                           | N/A                            |
+| Component                    | Type          | Port(s)          | Dependencies            | Health Endpoint               | Container Image                |
+| ---------------------------- | ------------- | ---------------- | ----------------------- | ----------------------------- | ------------------------------ |
+| **aspire1.Web**              | Blazor Server | 8080, 8443       | aspire1.ApiService      | `/health`                     | `aspire1-web:{version}`        |
+| **aspire1.ApiService**       | Minimal API   | 8080, 8443       | aspire1.ServiceDefaults | `/health`, `/health/detailed` | `aspire1-apiservice:{version}` |
+| **aspire1.ServiceDefaults**  | Class Library | N/A              | -                       | N/A                           | N/A                            |
+| **aspire1.AppHost**          | Orchestrator  | 5000 (dashboard) | All projects            | N/A                           | N/A                            |
+| **aspire1.Web.Tests**        | Test Project  | N/A              | aspire1.Web             | N/A                           | N/A                            |
+| **aspire1.ApiService.Tests** | Test Project  | N/A              | aspire1.ApiService      | N/A                           | N/A                            |
 
 ### Additional Endpoints
 
@@ -93,6 +95,13 @@ aspire1/
 ├── aspire1.ServiceDefaults/      # Shared Aspire defaults
 │   ├── Extensions.cs             # OpenTelemetry, health, resilience
 │   └── ARCHITECTURE.md           # Service defaults architecture
+│
+├── aspire1.ApiService.Tests/     # API service unit tests
+│   └── Services/
+│       └── CachedWeatherServiceTests.cs  # Cache service tests
+│
+├── aspire1.Web.Tests/            # Web frontend unit tests
+│   └── WeatherApiClientTests.cs  # HTTP client tests
 │
 ├── .github/
 │   └── workflows/
@@ -455,11 +464,11 @@ git push origin v2.0.0
 
 ### Planned Features
 
-- [ ] Add Redis cache for weather data (via Azure Cache for Redis)
 - [ ] Implement Azure App Configuration for feature flags
 - [ ] Add Azure SQL Database with EF Core
 - [ ] Multi-region deployment with Front Door
 - [ ] Dapr integration for pub/sub and state management
+- [x] Unit tests with xUnit, FluentAssertions, and NSubstitute
 - [ ] Integration tests with Aspire.Hosting.Testing
 
 ### Production Readiness Checklist
@@ -470,16 +479,95 @@ git push origin v2.0.0
 - [x] Health checks on all services
 - [x] Managed identity for all Azure resources
 - [x] CI/CD pipeline with GitHub Actions
+- [x] Unit test coverage (>80% target)
 - [ ] Custom domain + SSL certificate
 - [ ] Azure Front Door for CDN + WAF
 - [ ] Backup and disaster recovery plan
 - [ ] Load testing (target: 1000 req/sec sustained)
+
+## 🧪 Testing Strategy
+
+### Unit Tests
+
+The solution includes comprehensive unit tests following industry best practices:
+
+**Test Framework Stack:**
+
+- **xUnit 2.9.3** - Test framework
+- **FluentAssertions 6.12.0** - Readable assertions
+- **NSubstitute 5.1.0** - Mocking framework
+- **coverlet.collector 6.0.4** - Code coverage
+
+**Test Projects:**
+
+| Project                  | Tests | Coverage | Description                            |
+| ------------------------ | ----- | -------- | -------------------------------------- |
+| aspire1.ApiService.Tests | 7     | >80%     | Cache service logic and error handling |
+| aspire1.Web.Tests        | 10    | >80%     | HTTP client behavior and edge cases    |
+
+**Test Naming Convention:**
+
+```
+[MethodName]_[Scenario]_[ExpectedResult]
+Example: GetWeatherAsync_SuccessfulResponse_ReturnsForecasts
+```
+
+**Run Tests:**
+
+```bash
+# Run all tests
+dotnet test
+
+# Run specific project tests
+dotnet test aspire1.ApiService.Tests
+dotnet test aspire1.Web.Tests
+
+# Run with coverage
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+**Test Coverage Highlights:**
+
+- ✅ Cache hit/miss scenarios
+- ✅ Cache read/write failures with graceful degradation
+- ✅ HTTP client success/error responses
+- ✅ Cancellation token handling
+- ✅ Edge cases (empty data, various counts)
+- ✅ Temperature conversion validation
+
+**Key Test Patterns:**
+
+```csharp
+// ApiService: Mocking IDistributedCache
+_mockCache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+    .Returns(cachedData);
+
+// Web: Mocking HttpMessageHandler
+var handler = new MockHttpMessageHandler(HttpStatusCode.OK, json);
+var httpClient = new HttpClient(handler);
+
+// Assertions with FluentAssertions
+result.Should().NotBeNull();
+result.Should().HaveCount(5);
+forecast.TemperatureC.Should().Be(20);
+```
+
+### Integration Tests (Planned)
+
+Future integration tests will use `Aspire.Hosting.Testing` to:
+
+- Spin up full distributed application with real containers
+- Test service-to-service communication via service discovery
+- Verify health endpoints and OpenTelemetry traces
+- Validate Redis caching end-to-end
 
 ## 📖 References
 
 - [.NET Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/)
 - [Azure Container Apps](https://learn.microsoft.com/azure/container-apps/)
 - [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
+- [xUnit Documentation](https://xunit.net/)
+- [FluentAssertions Documentation](https://fluentassertions.com/)
 - [MinVer](https://github.com/adamralph/minver)
 - [OpenTelemetry .NET](https://opentelemetry.io/docs/languages/net/)
 

@@ -1,4 +1,5 @@
 using System.Reflection;
+using aspire1.ApiService.Services;
 using Azure.Identity;
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.FeatureManagement;
@@ -36,8 +37,23 @@ if (!string.IsNullOrEmpty(appConfigEndpoint))
 // Add feature management
 builder.Services.AddFeatureManagement();
 
+// Add Redis distributed cache with offline-first design
+try
+{
+    builder.AddRedisClient("cache");
+    Console.WriteLine("✅ Redis cache configured successfully.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"⚠️  Warning: Could not connect to Redis: {ex.Message}");
+    Console.WriteLine("Application will run without distributed caching.");
+}
+
 // Add services to the container.
 builder.Services.AddProblemDetails();
+
+// Register cached weather service
+builder.Services.AddScoped<CachedWeatherService>();
 
 // Capture version info at startup
 var version = builder.Configuration["APP_VERSION"] ??
@@ -66,11 +82,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];
-
 app.MapGet("/", () => "API service is running. Navigate to /weatherforecast to see sample data.");
 
-app.MapGet("/weatherforecast", async (IFeatureManager featureManager) =>
+app.MapGet("/weatherforecast", async (CachedWeatherService weatherService, IFeatureManager featureManager, CancellationToken cancellationToken) =>
 {
     // Check if feature is enabled
     if (!await featureManager.IsEnabledAsync("WeatherForecast"))
@@ -81,15 +95,8 @@ app.MapGet("/weatherforecast", async (IFeatureManager featureManager) =>
         );
     }
 
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return Results.Ok(forecast);
+    var forecasts = await weatherService.GetWeatherForecastAsync(10, cancellationToken);
+    return Results.Ok(forecasts);
 })
 .WithName("GetWeatherForecast");
 
@@ -133,8 +140,3 @@ app.MapGet("/health/detailed", async (IFeatureManager featureManager) =>
 app.MapDefaultEndpoints();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

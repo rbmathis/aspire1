@@ -200,8 +200,7 @@ private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builde
 // Add custom health checks
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"])
-    .AddNpgSql(connectionString, name: "database", tags: ["ready"])
-    .AddRedis(connectionString, name: "cache", tags: ["ready"]);
+    .AddNpgSql(connectionString, name: "database", tags: ["ready"]);
 ```
 
 **Tags Explained:**
