@@ -114,13 +114,10 @@ app.MapGet("/weatherforecast", async (CachedWeatherService weatherService, IFeat
         new KeyValuePair<string, object?>("feature_enabled", "true"));
 
     // Track sunny forecasts with temperature categorization
-    foreach (var forecast in forecasts)
+    foreach (var forecast in forecasts.Where(f => f.Summary?.Contains("Sunny", StringComparison.OrdinalIgnoreCase) == true))
     {
-        if (forecast.Summary?.Contains("Sunny", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            ApplicationMetrics.SunnyForecasts.Add(1,
-                new KeyValuePair<string, object?>("temperature_range", ApplicationMetrics.GetTemperatureRange(forecast.TemperatureC)));
-        }
+        ApplicationMetrics.SunnyForecasts.Add(1,
+            new KeyValuePair<string, object?>("temperature_range", ApplicationMetrics.GetTemperatureRange(forecast.TemperatureC)));
     }
 
     return Results.Ok(forecasts);
