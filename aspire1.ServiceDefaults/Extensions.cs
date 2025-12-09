@@ -7,6 +7,7 @@ using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -17,6 +18,7 @@ public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
+    private const string LoggerCategoryName = "Microsoft.Extensions.Hosting.Extensions";
 
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -57,7 +59,8 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter("aspire1.metrics"); // Custom application metrics
             })
             .WithTracing(tracing =>
             {
@@ -87,14 +90,87 @@ public static class Extensions
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
         }
 
-        // Uncomment the following lines to enable the Azure Monitor exporter (requires the Azure.Monitor.OpenTelemetry.AspNetCore package)
-        //if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
-        //{
-        //    builder.Services.AddOpenTelemetry()
-        //       .UseAzureMonitor();
-        //}
+        // Enable Azure Monitor (Application Insights) exporter when connection string is configured
+        // For local development: use User Secrets or appsettings.Development.json
+        // For Azure: automatically injected by azd or set via Key Vault reference
+        var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        if (!string.IsNullOrEmpty(appInsightsConnectionString))
+        {
+            try
+            {
+                builder.Services.AddOpenTelemetry()
+                   .UseAzureMonitor();
+                builder.Logging.AddConsole().AddFilter((category, level) =>
+                {
+                    if (category == "Microsoft.Extensions.Hosting.Extensions" && level == LogLevel.Information)
+                    {
+                        return true;
+                    }
+                    return level >= LogLevel.Warning;
+                });
+                
+                // Log Application Insights configuration using structured logging
+                LogApplicationInsightsStatus(builder, "Application Insights telemetry enabled", LogLevel.Information);
+            }
+            catch (ArgumentException ex)
+            {
+                // Invalid connection string format
+                LogApplicationInsightsStatus(builder, $"Invalid Application Insights configuration: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Authentication/authorization failure
+                LogApplicationInsightsStatus(builder, $"Application Insights authentication failed: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
+            }
+            catch (Exception ex)
+            {
+                // Unexpected errors
+                LogApplicationInsightsStatus(builder, $"Application Insights connection failed: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
+            }
+        }
+        else
+        {
+            LogApplicationInsightsStatus(builder, "Application Insights not configured (offline mode)", LogLevel.Information);
+        }
 
         return builder;
+    }
+
+    private static void LogApplicationInsightsStatus<TBuilder>(TBuilder builder, string message, LogLevel logLevel, Exception? exception = null) where TBuilder : IHostApplicationBuilder
+    {
+        // Create a temporary logger factory to log during configuration phase
+        // These messages are about Application Insights setup itself, so they use console logging
+        // Once the app is running, Application Insights will capture all subsequent logs
+        using var loggerFactory = LoggerFactory.Create(loggingBuilder =>
+        {
+            loggingBuilder.AddConfiguration(builder.Configuration.GetSection("Logging"));
+            loggingBuilder.AddConsole();
+        });
+        
+        var logger = loggerFactory.CreateLogger(LoggerCategoryName);
+        
+        // Use the appropriate log method based on log level
+        switch (logLevel)
+        {
+            case LogLevel.Warning:
+                if (exception != null)
+                    logger.LogWarning(exception, message);
+                else
+                    logger.LogWarning(message);
+                break;
+            case LogLevel.Error:
+                if (exception != null)
+                    logger.LogError(exception, message);
+                else
+                    logger.LogError(message);
+                break;
+            default:
+                if (exception != null)
+                    logger.LogInformation(exception, message);
+                else
+                    logger.LogInformation(message);
+                break;
+        }
     }
 
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder

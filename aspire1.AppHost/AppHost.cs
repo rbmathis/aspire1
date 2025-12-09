@@ -9,6 +9,17 @@ var commitSha = builder.Configuration["COMMIT_SHA"] ??
 var isLocalDev = builder.Environment.EnvironmentName == "Development" &&
                  string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]);
 
+// Add Application Insights for telemetry (only when deploying)
+var appInsights = !isLocalDev ? builder.AddAzureApplicationInsights("appinsights") : null;
+if (appInsights != null)
+{
+    Console.WriteLine("✅ Application Insights enabled");
+}
+else
+{
+    Console.WriteLine("⚠️  Application Insights disabled for local development");
+}
+
 // Add Azure App Configuration (only when deploying)
 var appConfig = !isLocalDev ? builder.AddAzureAppConfiguration("appconfig") : null;
 if (appConfig != null)
@@ -20,17 +31,19 @@ else
     Console.WriteLine("⚠️  Azure App Configuration disabled for local development");
 }
 
-// Add Redis for distributed caching and session state (only when Docker is available)
+// Add Redis for distributed caching and session state
 IResourceBuilder<IResourceWithConnectionString>? redis = null;
 if (!isLocalDev)
 {
-    redis = builder.AddRedis("cache");
-    Console.WriteLine("✅ Redis container enabled (Docker available)");
+    // Use Azure Cache for Redis in deployed environments
+    redis = builder.AddAzureRedis("cache");
+    Console.WriteLine("✅ Azure Cache for Redis enabled (managed service)");
 }
 else
 {
-    Console.WriteLine("⚠️  Redis disabled for local development (Docker not required)");
-    Console.WriteLine("   Services will use in-memory fallbacks");
+    // Use local Redis container for development
+    redis = builder.AddRedis("cache");
+    Console.WriteLine("✅ Redis container enabled for local development");
 }
 
 var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
@@ -39,6 +52,10 @@ var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
     .WithEnvironment("COMMIT_SHA", commitSha);
 
 // Only reference Azure resources if they were added
+if (appInsights != null)
+{
+    apiService.WithReference(appInsights);
+}
 if (appConfig != null)
 {
     apiService.WithReference(appConfig);
@@ -68,6 +85,10 @@ var webFrontend = builder.AddProject<Projects.aspire1_Web>("webfrontend")
     .WaitFor(apiService);
 
 // Only reference Azure resources if they were added
+if (appInsights != null)
+{
+    webFrontend.WithReference(appInsights);
+}
 if (appConfig != null)
 {
     webFrontend.WithReference(appConfig);

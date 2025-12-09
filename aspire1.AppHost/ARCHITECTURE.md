@@ -48,26 +48,62 @@ var version = builder.Configuration["VERSION"] ?? "1.0.0-local";
 var commitSha = builder.Configuration["COMMIT_SHA"] ??
                 Environment.GetEnvironmentVariable("GITHUB_SHA")?[..7] ?? "local";
 
+// Detect if we're running locally without Docker (offline-first development)
+var isLocalDev = builder.Environment.EnvironmentName == "Development" &&
+                 string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]);
+
+// Add Application Insights for telemetry (only when deploying)
+var appInsights = !isLocalDev ? builder.AddAzureApplicationInsights("appinsights") : null;
+if (appInsights != null)
+{
+    Console.WriteLine("✅ Application Insights enabled");
+}
+else
+{
+    Console.WriteLine("⚠️  Application Insights disabled for local development");
+}
+
 // 2. Register API Service
 var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
     .WithHttpHealthCheck("/health")                    // Health probe endpoint
     .WithEnvironment("APP_VERSION", version)           // Pass version to service
-    .WithEnvironment("COMMIT_SHA", commitSha)          // Pass commit SHA
-    .WithAnnotation(new ContainerImageAnnotation {     // Container metadata for ACA
+    .WithEnvironment("COMMIT_SHA", commitSha);         // Pass commit SHA
+
+// Reference Azure resources if they were added
+if (appInsights != null)
+{
+    apiService.WithReference(appInsights);
+}
+
+// Only add container annotations when deploying
+if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
+{
+    apiService.WithAnnotation(new ContainerImageAnnotation {
         Registry = builder.Configuration["CONTAINER_REGISTRY"],
         Image = "aspire1-apiservice",
         Tag = version
     });
+}
 
 // 3. Register Web Frontend
-builder.AddProject<Projects.aspire1_Web>("webfrontend")
+var webFrontend = builder.AddProject<Projects.aspire1_Web>("webfrontend")
     .WithExternalHttpEndpoints()                       // Expose to internet
     .WithHttpHealthCheck("/health")                    // Health probe endpoint
     .WithEnvironment("APP_VERSION", version)           // Pass version to service
     .WithEnvironment("COMMIT_SHA", commitSha)          // Pass commit SHA
     .WithReference(apiService)                         // Service discovery reference
-    .WaitFor(apiService)                               // Startup dependency
-    .WithAnnotation(new ContainerImageAnnotation {     // Container metadata for ACA
+    .WaitFor(apiService);                              // Startup dependency
+
+// Reference Azure resources if they were added
+if (appInsights != null)
+{
+    webFrontend.WithReference(appInsights);
+}
+
+// Only add container annotations when deploying
+if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
+{
+    webFrontend.WithAnnotation(new ContainerImageAnnotation {     // Container metadata for ACA
         Registry = builder.Configuration["CONTAINER_REGISTRY"],
         Image = "aspire1-web",
         Tag = version
