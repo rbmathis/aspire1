@@ -1,7 +1,7 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj": {}
+    "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj": {}
   },
   "projects": {
     "C:\\Users\\rmathis\\source\\aspire1\\aspire1.ServiceDefaults\\aspire1.ServiceDefaults.csproj": {
@@ -516,14 +516,14 @@
         }
       }
     },
-    "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj": {
+    "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
+        "projectUniqueName": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
         "projectName": "aspire1.Web",
-        "projectPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
+        "projectPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
         "packagesPath": "C:\\Users\\rmathis\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\obj\\",
+        "outputPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rmathis\\AppData\\Roaming\\NuGet\\NuGet.Config"

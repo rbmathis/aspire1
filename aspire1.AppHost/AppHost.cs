@@ -12,27 +12,37 @@ var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("APP_VERSION", version)
     .WithEnvironment("COMMIT_SHA", commitSha)
-    .WithReference(appConfig)
-    .WithAnnotation(new ContainerImageAnnotation
+    .WithReference(appConfig);
+
+// Only add container annotations when deploying (CONTAINER_REGISTRY is set by azd)
+if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
+{
+    apiService.WithAnnotation(new ContainerImageAnnotation
     {
         Registry = builder.Configuration["CONTAINER_REGISTRY"],
         Image = "aspire1-apiservice",
         Tag = version
     });
+}
 
-builder.AddProject<Projects.aspire1_Web>("webfrontend")
+var webFrontend = builder.AddProject<Projects.aspire1_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")
     .WithEnvironment("APP_VERSION", version)
     .WithEnvironment("COMMIT_SHA", commitSha)
     .WithReference(apiService)
     .WithReference(appConfig)
-    .WaitFor(apiService)
-    .WithAnnotation(new ContainerImageAnnotation
+    .WaitFor(apiService);
+
+// Only add container annotations when deploying
+if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
+{
+    webFrontend.WithAnnotation(new ContainerImageAnnotation
     {
         Registry = builder.Configuration["CONTAINER_REGISTRY"],
         Image = "aspire1-web",
         Tag = version
     });
+}
 
 builder.Build().Run();

@@ -17,5 +17,5 @@ public class aspire1_AppHost
     /// <summary>
     /// The path to the Aspire Host project.
     /// </summary>
-    public static string ProjectPath => """C:\Users\rmathis\source\aspire1\aspire1.AppHost""";
+    public static string ProjectPath => """c:\Users\rmathis\source\aspire1\aspire1.AppHost""";
 }

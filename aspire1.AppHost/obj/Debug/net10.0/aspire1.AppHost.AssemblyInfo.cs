@@ -17,15 +17,15 @@ using System.Reflection;
     "s\\ext\\"))]
 [assembly: System.Reflection.AssemblyMetadata("dcpbinpath", ("C:\\Users\\rmathis\\.nuget\\packages\\aspire.hosting.orchestration.win-x64\\13.0.2\\tool" +
     "s\\ext\\bin\\"))]
-[assembly: System.Reflection.AssemblyMetadata("apphostprojectpath", "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost")]
+[assembly: System.Reflection.AssemblyMetadata("apphostprojectpath", "c:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost")]
 [assembly: System.Reflection.AssemblyMetadata("apphostprojectname", "aspire1.AppHost.csproj")]
 [assembly: System.Reflection.AssemblyMetadata("aspiredashboardpath", ("C:\\Users\\rmathis\\.nuget\\packages\\aspire.dashboard.sdk.win-x64\\13.0.2\\tools\\Aspire" +
     ".Dashboard.exe"))]
-[assembly: System.Reflection.AssemblyMetadataAttribute("apphostprojectbaseintermediateoutputpath", "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\obj\\")]
+[assembly: System.Reflection.AssemblyMetadataAttribute("apphostprojectbaseintermediateoutputpath", "c:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\obj\\")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("aspire1.AppHost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.1.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.1-preview.12+74708cd543c93e9a939799cff7e49c8eee885ee2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.1-preview.14+9c0a0038e66730f8586cd71089f192e2b7ab4fd5")]
 [assembly: System.Reflection.AssemblyProductAttribute("aspire1.AppHost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("aspire1.AppHost")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
