@@ -1,0 +1,91 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run AppHost (Aspire Dashboard)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/aspire1.AppHost/aspire1.AppHost.csproj",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug ApiService",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-apiservice",
+      "program": "${workspaceFolder}/aspire1.ApiService/bin/Debug/net10.0/aspire1.ApiService.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/aspire1.ApiService",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:7002"
+      },
+      "sourceFileMap": {
+        "/Views": "${workspaceFolder}/Views"
+      }
+    },
+    {
+      "name": "Debug Web (Blazor)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-web",
+      "program": "${workspaceFolder}/aspire1.Web/bin/Debug/net10.0/aspire1.Web.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/aspire1.Web",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5188"
+      },
+      "sourceFileMap": {
+        "/Views": "${workspaceFolder}/Views"
+      }
+    },
+    {
+      "name": "Attach to AppHost",
+      "type": "coreclr",
+      "request": "attach",
+      "processName": "aspire1.AppHost"
+    },
+    {
+      "name": "Attach to ApiService",
+      "type": "coreclr",
+      "request": "attach",
+      "processName": "aspire1.ApiService"
+    },
+    {
+      "name": "Attach to Web",
+      "type": "coreclr",
+      "request": "attach",
+      "processName": "aspire1.Web"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug All Services",
+      "configurations": [
+        "Debug ApiService",
+        "Debug Web (Blazor)"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "hidden": false,
+        "group": "Aspire",
+        "order": 1
+      }
+    }
+  ]
+}
