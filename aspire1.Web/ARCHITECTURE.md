@@ -41,7 +41,7 @@ graph TB
         end
     end
 
-    API[aspire1.ApiService]
+    API[aspire1.WeatherService]
     AppInsights[Application Insights]
 
     User <-->|SignalR| SignalR
@@ -149,12 +149,12 @@ sequenceDiagram
     participant Weather.razor
     participant WeatherApiClient
     participant ServiceDiscovery
-    participant API as aspire1.ApiService
+    participant API as aspire1.WeatherService
 
     User->>Weather.razor: Navigate to /weather
     Weather.razor->>WeatherApiClient: GetWeatherAsync()
-    WeatherApiClient->>ServiceDiscovery: Resolve "apiservice"
-    ServiceDiscovery-->>WeatherApiClient: https://apiservice:8443
+    WeatherApiClient->>ServiceDiscovery: Resolve "weatherservice"
+    ServiceDiscovery-->>WeatherApiClient: https://weatherservice:8443
     WeatherApiClient->>API: GET /weatherforecast
     API-->>WeatherApiClient: Weather data (JSON)
     WeatherApiClient-->>Weather.razor: List<WeatherForecast>
@@ -184,14 +184,14 @@ sequenceDiagram
 ```csharp
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
 {
-    // Service discovery: "apiservice" resolves to internal URL
-    client.BaseAddress = new("https+http://apiservice");
+    // Service discovery: "weatherservice" resolves to internal URL
+    client.BaseAddress = new("https+http://weatherservice");
 });
 ```
 
 **Key Features:**
 
-- **Service Discovery:** `"apiservice"` name resolves via Aspire
+- **Service Discovery:** `"weatherservice"` name resolves via Aspire
 - **Resilience:** Automatic retry, circuit breaker, timeout (from ServiceDefaults)
 - **Scheme Preference:** `https+http://` prefers HTTPS, falls back to HTTP
 - **Instrumentation:** All HTTP calls traced via OpenTelemetry
@@ -403,7 +403,7 @@ dotnet run --project aspire1.Web
 - `APP_VERSION`: `1.0.0`
 - `COMMIT_SHA`: `a1af010`
 - `ASPNETCORE_ENVIRONMENT`: `Production`
-- `services__apiservice__https__0`: `https://aspire1-apiservice.internal.{env}.azurecontainerapps.io` (service discovery)
+- `services__weatherservice__https__0`: `https://aspire1-weatherservice.internal.{env}.azurecontainerapps.io` (service discovery)
 
 **Ingress:**
 
@@ -950,7 +950,7 @@ app.MapStaticAssets(); // .NET 9+ optimization
 
 - [Root Architecture](../ARCHITECTURE.md)
 - [AppHost Architecture](../aspire1.AppHost/ARCHITECTURE.md)
-- [API Service Architecture](../aspire1.ApiService/ARCHITECTURE.md)
+- [API Service Architecture](../aspire1.WeatherService/ARCHITECTURE.md)
 - [Service Defaults](../aspire1.ServiceDefaults/ARCHITECTURE.md)
 
 ## 🔗 Useful Commands

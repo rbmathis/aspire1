@@ -18,12 +18,12 @@
       }
     },
     {
-      "label": "build-apiservice",
+      "label": "build-weatherservice",
       "command": "dotnet",
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/aspire1.ApiService/aspire1.ApiService.csproj",
+        "${workspaceFolder}/aspire1.WeatherService/aspire1.WeatherService.csproj",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary;ForceNoAlign"
       ],
@@ -93,13 +93,13 @@
       }
     },
     {
-      "label": "run-apiservice",
+      "label": "run-weatherservice",
       "command": "dotnet",
       "type": "process",
       "args": [
         "run",
         "--project",
-        "${workspaceFolder}/aspire1.ApiService/aspire1.ApiService.csproj"
+        "${workspaceFolder}/aspire1.WeatherService/aspire1.WeatherService.csproj"
       ],
       "problemMatcher": "$msCompile",
       "isBackground": true,
@@ -131,14 +131,14 @@
       }
     },
     {
-      "label": "watch-apiservice",
+      "label": "watch-weatherservice",
       "command": "dotnet",
       "type": "process",
       "args": [
         "watch",
         "run",
         "--project",
-        "${workspaceFolder}/aspire1.ApiService/aspire1.ApiService.csproj"
+        "${workspaceFolder}/aspire1.WeatherService/aspire1.WeatherService.csproj"
       ],
       "problemMatcher": "$msCompile",
       "isBackground": true,

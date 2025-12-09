@@ -110,7 +110,7 @@ That's it. Seriously. `azd` will:
     │         │ discovery      │
     │         ▼                │
     │  ┌────────────────────┐  │
-    │  │  aspire1-apiservice│  │ ← REST API (the smart one)
+    │  │  aspire1-weatherservice│  │ ← REST API (the smart one)
     │  │  Minimal API       │  │
     │  └────────────────────┘  │
     │                          │
@@ -234,7 +234,7 @@ aspire1/
 │   ├── AppHost.cs             # Service topology & discovery magic
 │   └── ARCHITECTURE.md        # Deep dive docs
 │
-├── aspire1.ApiService/        # 🔌 The Backend Ninja
+├── aspire1.WeatherService/        # 🔌 The Backend Ninja
 │   ├── Program.cs             # Minimal APIs + custom metrics
 │   ├── Services/
 │   │   └── CachedWeatherService.cs  # Redis caching genius
@@ -289,7 +289,7 @@ dotnet run --project aspire1.AppHost
 dotnet test
 
 # Run specific project tests
-dotnet test aspire1.ApiService.Tests
+dotnet test aspire1.WeatherService.Tests
 dotnet test aspire1.Web.Tests
 ```
 
@@ -316,7 +316,7 @@ git push --tags
 
 ```bash
 # Set secrets for local dev (never commits to git)
-dotnet user-secrets set "ConnectionStrings:MyDb" "..." --project aspire1.ApiService
+dotnet user-secrets set "ConnectionStrings:MyDb" "..." --project aspire1.WeatherService
 ```
 
 ### Azure: Key Vault References
@@ -397,7 +397,7 @@ az containerapp logs show --name aspire1-web --resource-group <rg-name> --follow
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) - High-level solution architecture
 - [`TELEMETRY.md`](TELEMETRY.md) - Custom metrics deep dive
 - [`aspire1.ServiceDefaults/ARCHITECTURE.md`](aspire1.ServiceDefaults/ARCHITECTURE.md) - OpenTelemetry patterns
-- [`aspire1.ApiService/ARCHITECTURE.md`](aspire1.ApiService/ARCHITECTURE.md) - API design
+- [`aspire1.WeatherService/ARCHITECTURE.md`](aspire1.WeatherService/ARCHITECTURE.md) - API design
 - [`aspire1.Web/ARCHITECTURE.md`](aspire1.Web/ARCHITECTURE.md) - Blazor Server architecture
 - [`aspire1.AppHost/ARCHITECTURE.md`](aspire1.AppHost/ARCHITECTURE.md) - Service orchestration
 

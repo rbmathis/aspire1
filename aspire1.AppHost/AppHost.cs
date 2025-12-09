@@ -46,7 +46,7 @@ else
     Console.WriteLine("✅ Redis container enabled for local development");
 }
 
-var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
+var weatherService = builder.AddProject<Projects.aspire1_WeatherService>("weatherservice")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("APP_VERSION", version)
     .WithEnvironment("COMMIT_SHA", commitSha);
@@ -54,24 +54,24 @@ var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
 // Only reference Azure resources if they were added
 if (appInsights != null)
 {
-    apiService.WithReference(appInsights);
+    weatherService.WithReference(appInsights);
 }
 if (appConfig != null)
 {
-    apiService.WithReference(appConfig);
+    weatherService.WithReference(appConfig);
 }
 if (redis != null)
 {
-    apiService.WithReference(redis);
+    weatherService.WithReference(redis);
 }
 
 // Only add container annotations when deploying (CONTAINER_REGISTRY is set by azd)
 if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
 {
-    apiService.WithAnnotation(new ContainerImageAnnotation
+    weatherService.WithAnnotation(new ContainerImageAnnotation
     {
         Registry = builder.Configuration["CONTAINER_REGISTRY"],
-        Image = "aspire1-apiservice",
+        Image = "aspire1-weatherservice",
         Tag = version
     });
 }
@@ -81,8 +81,8 @@ var webFrontend = builder.AddProject<Projects.aspire1_Web>("webfrontend")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("APP_VERSION", version)
     .WithEnvironment("COMMIT_SHA", commitSha)
-    .WithReference(apiService)
-    .WaitFor(apiService);
+    .WithReference(weatherService)
+    .WaitFor(weatherService);
 
 // Only reference Azure resources if they were added
 if (appInsights != null)

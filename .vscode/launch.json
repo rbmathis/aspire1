@@ -3,9 +3,13 @@
   "configurations": [
     {
       "name": "Run AppHost (Aspire Dashboard)",
-      "type": "dotnet",
+      "type": "coreclr",
       "request": "launch",
-      "projectPath": "${workspaceFolder}/aspire1.AppHost/aspire1.AppHost.csproj",
+      "preLaunchTask": "build-apphost",
+      "program": "${workspaceFolder}/aspire1.AppHost/bin/Debug/net10.0/aspire1.AppHost.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/aspire1.AppHost",
+      "stopAtEntry": false,
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development"
@@ -13,13 +17,13 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Debug ApiService",
+      "name": "Debug WeatherService",
       "type": "coreclr",
       "request": "launch",
-      "preLaunchTask": "build-apiservice",
-      "program": "${workspaceFolder}/aspire1.ApiService/bin/Debug/net10.0/aspire1.ApiService.dll",
+      "preLaunchTask": "build-weatherservice",
+      "program": "${workspaceFolder}/aspire1.WeatherService/bin/Debug/net10.0/aspire1.WeatherService.dll",
       "args": [],
-      "cwd": "${workspaceFolder}/aspire1.ApiService",
+      "cwd": "${workspaceFolder}/aspire1.WeatherService",
       "stopAtEntry": false,
       "serverReadyAction": {
         "action": "openExternally",
@@ -63,10 +67,10 @@
       "processName": "aspire1.AppHost"
     },
     {
-      "name": "Attach to ApiService",
+      "name": "Attach to WeatherService",
       "type": "coreclr",
       "request": "attach",
-      "processName": "aspire1.ApiService"
+      "processName": "aspire1.WeatherService"
     },
     {
       "name": "Attach to Web",
@@ -78,7 +82,7 @@
   "compounds": [
     {
       "name": "Debug All Services",
-      "configurations": ["Debug ApiService", "Debug Web (Blazor)"],
+      "configurations": ["Debug WeatherService", "Debug Web (Blazor)"],
       "stopAll": true,
       "presentation": {
         "hidden": false,

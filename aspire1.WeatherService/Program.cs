@@ -1,5 +1,5 @@
 using System.Reflection;
-using aspire1.ApiService.Services;
+using aspire1.WeatherService.Services;
 using Azure.Identity;
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.FeatureManagement;
@@ -44,6 +44,10 @@ if (!string.IsNullOrEmpty(redisConnectionName))
     try
     {
         builder.AddRedisClient("cache");
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionName;
+        });
         Console.WriteLine("✅ Redis distributed cache configured successfully.");
     }
     catch (Exception ex)

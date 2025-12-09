@@ -24,7 +24,7 @@ graph TB
     AppHost[aspire1.AppHost<br/>Orchestrator]
 
     subgraph "Managed Services"
-        API[aspire1.ApiService<br/>Internal API]
+        API[aspire1.WeatherService<br/>Internal API]
         Web[aspire1.Web<br/>Public Frontend]
     end
 
@@ -64,7 +64,7 @@ else
 }
 
 // 2. Register API Service
-var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
+var weatherService = builder.AddProject<Projects.aspire1_WeatherService>("weatherservice")
     .WithHttpHealthCheck("/health")                    // Health probe endpoint
     .WithEnvironment("APP_VERSION", version)           // Pass version to service
     .WithEnvironment("COMMIT_SHA", commitSha);         // Pass commit SHA
@@ -72,15 +72,15 @@ var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
 // Reference Azure resources if they were added
 if (appInsights != null)
 {
-    apiService.WithReference(appInsights);
+    weatherService.WithReference(appInsights);
 }
 
 // Only add container annotations when deploying
 if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
 {
-    apiService.WithAnnotation(new ContainerImageAnnotation {
+    weatherService.WithAnnotation(new ContainerImageAnnotation {
         Registry = builder.Configuration["CONTAINER_REGISTRY"],
-        Image = "aspire1-apiservice",
+        Image = "aspire1-weatherservice",
         Tag = version
     });
 }
@@ -91,8 +91,8 @@ var webFrontend = builder.AddProject<Projects.aspire1_Web>("webfrontend")
     .WithHttpHealthCheck("/health")                    // Health probe endpoint
     .WithEnvironment("APP_VERSION", version)           // Pass version to service
     .WithEnvironment("COMMIT_SHA", commitSha)          // Pass commit SHA
-    .WithReference(apiService)                         // Service discovery reference
-    .WaitFor(apiService);                              // Startup dependency
+    .WithReference(weatherService)                         // Service discovery reference
+    .WaitFor(weatherService);                              // Startup dependency
 
 // Reference Azure resources if they were added
 if (appInsights != null)
@@ -118,18 +118,18 @@ if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
 sequenceDiagram
     participant Web as aspire1.Web
     participant AppHost as AppHost Registry
-    participant API as aspire1.ApiService
+    participant API as aspire1.WeatherService
 
-    Web->>AppHost: Resolve "apiservice"
-    AppHost-->>Web: https://apiservice:8443
+    Web->>AppHost: Resolve "weatherservice"
+    AppHost-->>Web: https://weatherservice:8443
     Web->>API: GET /weatherforecast
     API-->>Web: Weather data
 ```
 
 **Key Points:**
 
-- Service names (`"apiservice"`, `"webfrontend"`) become DNS entries
-- `WithReference(apiService)` injects `services__apiservice__https__0` environment variable
+- Service names (`"weatherservice"`, `"webfrontend"`) become DNS entries
+- `WithReference(weatherService)` injects `services__weatherservice__https__0` environment variable
 - Scheme resolution: `https+http://` prefers HTTPS, falls back to HTTP
 - Internal communication stays within ACA Environment (no internet egress)
 
@@ -147,7 +147,7 @@ dotnet run --project aspire1.AppHost
 ```
 Aspire Dashboard: http://localhost:5000
 aspire1-web: http://localhost:7001
-aspire1-apiservice: http://localhost:7002
+aspire1-weatherservice: http://localhost:7002
 ```
 
 ### Dashboard Features
@@ -163,8 +163,8 @@ aspire1-apiservice: http://localhost:7002
 ### Testing Service Discovery
 
 ```bash
-# From aspire1.Web container, "apiservice" resolves automatically
-curl http://apiservice/weatherforecast
+# From aspire1.Web container, "weatherservice" resolves automatically
+curl http://weatherservice/weatherforecast
 ```
 
 ## ☁️ Production Deployment
@@ -200,7 +200,7 @@ var postgres = builder.AddPostgres("postgres")
     .WithPgAdmin()          // Optional: pgAdmin UI
     .AddDatabase("aspiredb");
 
-var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
+var weatherService = builder.AddProject<Projects.aspire1_WeatherService>("weatherservice")
     .WithReference(postgres)
     .WithHttpHealthCheck("/health");
 ```
@@ -210,7 +210,7 @@ var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
 ```csharp
 var serviceBus = builder.AddAzureServiceBus("messaging");
 
-var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
+var weatherService = builder.AddProject<Projects.aspire1_WeatherService>("weatherservice")
     .WithReference(serviceBus)  // Injects connection string from Key Vault
     .WithHttpHealthCheck("/health");
 ```
@@ -271,12 +271,12 @@ var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
 ```csharp
 // Ensure service has a reference
 builder.AddProject<Projects.aspire1_Web>("webfrontend")
-    .WithReference(apiService)  // ← Add this
+    .WithReference(weatherService)  // ← Add this
 
 // In aspire1.Web Program.cs:
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
 {
-    client.BaseAddress = new("https+http://apiservice");  // ← Use service name
+    client.BaseAddress = new("https+http://weatherservice");  // ← Use service name
 });
 ```
 
@@ -317,7 +317,7 @@ azd env set VERSION $version
 ## 📚 Related Documentation
 
 - [Root Architecture](../ARCHITECTURE.md) - Full solution architecture
-- [API Service Architecture](../aspire1.ApiService/ARCHITECTURE.md)
+- [API Service Architecture](../aspire1.WeatherService/ARCHITECTURE.md)
 - [Web Service Architecture](../aspire1.Web/ARCHITECTURE.md)
 - [Service Defaults](../aspire1.ServiceDefaults/ARCHITECTURE.md)
 
@@ -339,4 +339,4 @@ dotnet run --project aspire1.AppHost -- --publisher manifest --output-path ./man
 
 ---
 
-**Next:** [API Service Architecture](../aspire1.ApiService/ARCHITECTURE.md) →
+**Next:** [API Service Architecture](../aspire1.WeatherService/ARCHITECTURE.md) →
