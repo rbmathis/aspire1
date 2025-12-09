@@ -25,7 +25,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("aspire1.AppHost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("..")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a1af010e1852193215901678abbb2df7da0c30d1")]
 [assembly: System.Reflection.AssemblyProductAttribute("aspire1.AppHost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("aspire1.AppHost")]
 [assembly: System.Reflection.AssemblyVersionAttribute("..")]

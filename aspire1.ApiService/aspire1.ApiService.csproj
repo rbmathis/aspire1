@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    
+
     <!-- Container configuration for ACA -->
     <ContainerRepository>aspire1-apiservice</ContainerRepository>
     <EnableSdkContainerSupport>true</EnableSdkContainerSupport>

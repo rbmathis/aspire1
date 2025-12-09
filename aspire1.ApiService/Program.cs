@@ -9,11 +9,11 @@ builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 
 // Capture version info at startup
-var version = builder.Configuration["APP_VERSION"] ?? 
+var version = builder.Configuration["APP_VERSION"] ??
               Assembly.GetExecutingAssembly()
                       .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                       ?.InformationalVersion ?? "unknown";
-var commitSha = builder.Configuration["COMMIT_SHA"] ?? 
+var commitSha = builder.Configuration["COMMIT_SHA"] ??
                 Environment.GetEnvironmentVariable("GITHUB_SHA")?[..7] ?? "local";
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -48,17 +48,17 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 // Version endpoint for deployment tracking
-app.MapGet("/version", () => new 
-{ 
-    version, 
+app.MapGet("/version", () => new
+{
+    version,
     commitSha,
     service = "apiservice",
     environment = app.Environment.EnvironmentName,
     timestamp = DateTime.UtcNow
 })
-.WithName("GetVersion")
-.WithOpenApi();
+.WithName("GetVersion");
 
+// Enhanced health with version for OpenTelemetry correlation
 // Enhanced health with version for OpenTelemetry correlation
 app.MapGet("/health/detailed", () => new
 {
@@ -69,9 +69,7 @@ app.MapGet("/health/detailed", () => new
     timestamp = DateTime.UtcNow,
     uptime = Environment.TickCount64 / 1000.0 // seconds
 })
-.WithName("GetDetailedHealth")
-.WithOpenApi();
-
+.WithName("GetDetailedHealth");
 app.MapDefaultEndpoints();
 
 app.Run();

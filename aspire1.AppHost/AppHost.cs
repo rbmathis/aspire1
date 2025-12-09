@@ -2,7 +2,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 // Capture version for container tags and ACA revision labels
 var version = builder.Configuration["VERSION"] ?? "1.0.0-local";
-var commitSha = builder.Configuration["COMMIT_SHA"] ?? 
+var commitSha = builder.Configuration["COMMIT_SHA"] ??
                 Environment.GetEnvironmentVariable("GITHUB_SHA")?[..7] ?? "local";
 
 var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
