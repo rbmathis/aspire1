@@ -1,7 +1,7 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj": {}
+    "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj": {}
   },
   "projects": {
     "C:\\Users\\rmathis\\source\\aspire1\\aspire1.ServiceDefaults\\aspire1.ServiceDefaults.csproj": {
@@ -516,14 +516,14 @@
         }
       }
     },
-    "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj": {
+    "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
+        "projectUniqueName": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
         "projectName": "aspire1.Web",
-        "projectPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
+        "projectPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
         "packagesPath": "C:\\Users\\rmathis\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\obj\\",
+        "outputPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rmathis\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -560,6 +560,10 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "dependencies": {
+            "Aspire.StackExchange.Redis": {
+              "target": "Package",
+              "version": "[9.1.0, )"
+            },
             "Azure.Identity": {
               "target": "Package",
               "version": "[1.13.1, )"

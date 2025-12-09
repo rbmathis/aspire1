@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj": {}
+    "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj": {}
   },
   "projects": {
-    "c:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj": {
+    "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj",
+        "projectUniqueName": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj",
         "projectName": "aspire1.AppHost",
-        "projectPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj",
+        "projectPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\aspire1.AppHost.csproj",
         "packagesPath": "C:\\Users\\rmathis\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\obj\\",
+        "outputPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.AppHost\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rmathis\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -62,6 +62,10 @@
               "target": "Package",
               "version": "[13.0.2, )",
               "autoReferenced": true
+            },
+            "Aspire.Hosting.Redis": {
+              "target": "Package",
+              "version": "[9.1.0, )"
             },
             "MinVer": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",

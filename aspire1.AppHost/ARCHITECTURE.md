@@ -1,7 +1,7 @@
 # Architecture - aspire1.AppHost
 
-> **Component Type:** Orchestrator  
-> **Framework:** .NET Aspire 13.x  
+> **Component Type:** Orchestrator
+> **Framework:** .NET Aspire 13.x
 > **Purpose:** Service discovery, orchestration, and local development environment
 
 ## 🎯 Overview
@@ -22,17 +22,17 @@ The **AppHost** project is the heart of your Aspire application. It defines the 
 ```mermaid
 graph TB
     AppHost[aspire1.AppHost<br/>Orchestrator]
-    
+
     subgraph "Managed Services"
         API[aspire1.ApiService<br/>Internal API]
         Web[aspire1.Web<br/>Public Frontend]
     end
-    
+
     AppHost -->|Registers| API
     AppHost -->|Registers| Web
     Web -->|WithReference| API
     Web -->|WaitFor| API
-    
+
     style AppHost fill:#ff6b6b,stroke:#c92a2a,color:#fff
     style API fill:#0078d4,stroke:#005a9e,color:#fff
     style Web fill:#0078d4,stroke:#005a9e,color:#fff
@@ -45,7 +45,7 @@ graph TB
 ```csharp
 // 1. Capture version metadata from configuration or environment
 var version = builder.Configuration["VERSION"] ?? "1.0.0-local";
-var commitSha = builder.Configuration["COMMIT_SHA"] ?? 
+var commitSha = builder.Configuration["COMMIT_SHA"] ??
                 Environment.GetEnvironmentVariable("GITHUB_SHA")?[..7] ?? "local";
 
 // 2. Register API Service
@@ -83,7 +83,7 @@ sequenceDiagram
     participant Web as aspire1.Web
     participant AppHost as AppHost Registry
     participant API as aspire1.ApiService
-    
+
     Web->>AppHost: Resolve "apiservice"
     AppHost-->>Web: https://apiservice:8443
     Web->>API: GET /weatherforecast
@@ -91,6 +91,7 @@ sequenceDiagram
 ```
 
 **Key Points:**
+
 - Service names (`"apiservice"`, `"webfrontend"`) become DNS entries
 - `WithReference(apiService)` injects `services__apiservice__https__0` environment variable
 - Scheme resolution: `https+http://` prefers HTTPS, falls back to HTTP
@@ -106,6 +107,7 @@ dotnet run --project aspire1.AppHost
 ```
 
 **Output:**
+
 ```
 Aspire Dashboard: http://localhost:5000
 aspire1-web: http://localhost:7001
@@ -114,13 +116,13 @@ aspire1-apiservice: http://localhost:7002
 
 ### Dashboard Features
 
-| Feature | Purpose |
-|---------|---------|
-| **Resources** | View all services, their status, and endpoints |
-| **Console Logs** | Real-time logs from each service |
-| **Traces** | Distributed tracing visualization (OpenTelemetry) |
-| **Metrics** | Live metrics (requests/sec, CPU, memory) |
-| **Structured Logs** | Filterable, searchable log viewer |
+| Feature             | Purpose                                           |
+| ------------------- | ------------------------------------------------- |
+| **Resources**       | View all services, their status, and endpoints    |
+| **Console Logs**    | Real-time logs from each service                  |
+| **Traces**          | Distributed tracing visualization (OpenTelemetry) |
+| **Metrics**         | Live metrics (requests/sec, CPU, memory)          |
+| **Structured Logs** | Filterable, searchable log viewer                 |
 
 ### Testing Service Discovery
 
@@ -146,25 +148,14 @@ When you run `azd up`, the AppHost:
 
 ### Environment Variables Injected by azd
 
-| Variable | Source | Purpose |
-|----------|--------|---------|
-| `VERSION` | MinVer (git tag) | Injected during `azd up` preprovision hook |
-| `COMMIT_SHA` | Git or `GITHUB_SHA` | Short commit hash for traceability |
-| `CONTAINER_REGISTRY` | Azure Container Registry endpoint | Set during `azd up` prepackage hook |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | Application Insights | OpenTelemetry export target |
+| Variable                      | Source                            | Purpose                                    |
+| ----------------------------- | --------------------------------- | ------------------------------------------ |
+| `VERSION`                     | MinVer (git tag)                  | Injected during `azd up` preprovision hook |
+| `COMMIT_SHA`                  | Git or `GITHUB_SHA`               | Short commit hash for traceability         |
+| `CONTAINER_REGISTRY`          | Azure Container Registry endpoint | Set during `azd up` prepackage hook        |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Application Insights              | OpenTelemetry export target                |
 
 ## 🎨 Customization Examples
-
-### Add Redis Cache
-
-```csharp
-var redis = builder.AddRedis("cache")
-    .WithRedisCommander();  // Optional: Redis management UI
-
-var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
-    .WithReference(redis)   // Injects connection string
-    .WithHttpHealthCheck("/health");
-```
 
 ### Add PostgreSQL Database
 
@@ -240,6 +231,7 @@ var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
 **Symptom:** `HttpClient` can't resolve service name
 
 **Fix:**
+
 ```csharp
 // Ensure service has a reference
 builder.AddProject<Projects.aspire1_Web>("webfrontend")
@@ -257,10 +249,12 @@ builder.Services.AddHttpClient<WeatherApiClient>(client =>
 **Symptom:** `http://localhost:5000` shows 404
 
 **Possible Causes:**
+
 1. Port conflict (another process using 5000)
 2. AppHost not running (`dotnet run --project aspire1.AppHost`)
 
 **Fix:**
+
 ```bash
 # Check if port is in use
 netstat -ano | findstr :5000
@@ -273,6 +267,7 @@ netstat -ano | findstr :5000
 **Symptom:** `/version` endpoint returns local version
 
 **Fix:**
+
 ```bash
 # Ensure azd hooks set VERSION environment variable
 azd env get-values | findstr VERSION

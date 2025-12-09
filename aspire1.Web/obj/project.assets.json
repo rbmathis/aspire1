@@ -2,6 +2,43 @@
   "version": 3,
   "targets": {
     "net10.0": {
+      "Aspire.StackExchange.Redis/9.1.0": {
+        "type": "package",
+        "dependencies": {
+          "AspNetCore.HealthChecks.Redis": "9.0.0",
+          "OpenTelemetry.Extensions.Hosting": "1.9.0",
+          "StackExchange.Redis": "2.8.22"
+        },
+        "compile": {
+          "lib/net8.0/Aspire.StackExchange.Redis.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Aspire.StackExchange.Redis.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "buildTransitive/net8.0/Aspire.StackExchange.Redis.targets": {}
+        }
+      },
+      "AspNetCore.HealthChecks.Redis/9.0.0": {
+        "type": "package",
+        "dependencies": {
+          "StackExchange.Redis": "2.7.4"
+        },
+        "compile": {
+          "lib/net8.0/HealthChecks.Redis.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/HealthChecks.Redis.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Azure.Core/1.44.1": {
         "type": "package",
         "dependencies": {
@@ -588,6 +625,19 @@
           }
         }
       },
+      "Pipelines.Sockets.Unofficial/2.2.8": {
+        "type": "package",
+        "compile": {
+          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Polly.Core/8.4.2": {
         "type": "package",
         "compile": {
@@ -630,6 +680,22 @@
         "runtime": {
           "lib/net8.0/Polly.RateLimiting.dll": {
             "related": ".pdb;.xml"
+          }
+        }
+      },
+      "StackExchange.Redis/2.8.22": {
+        "type": "package",
+        "dependencies": {
+          "Pipelines.Sockets.Unofficial": "2.2.8"
+        },
+        "compile": {
+          "lib/net8.0/StackExchange.Redis.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/StackExchange.Redis.dll": {
+            "related": ".xml"
           }
         }
       },
@@ -707,6 +773,40 @@
     }
   },
   "libraries": {
+    "Aspire.StackExchange.Redis/9.1.0": {
+      "sha512": "HRje2x1vkTifiyElVYOg4L0DoBvHGTXptPuoIKwQvPFpdoScTXvFD+GiOnZPJ1pxXmAbuqsKU+iD/ugoxFd4NA==",
+      "type": "package",
+      "path": "aspire.stackexchange.redis/9.1.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "ConfigurationSchema.json",
+        "Icon.png",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "aspire.stackexchange.redis.9.1.0.nupkg.sha512",
+        "aspire.stackexchange.redis.nuspec",
+        "buildTransitive/net8.0/Aspire.StackExchange.Redis.targets",
+        "lib/net8.0/Aspire.StackExchange.Redis.dll",
+        "lib/net8.0/Aspire.StackExchange.Redis.xml"
+      ]
+    },
+    "AspNetCore.HealthChecks.Redis/9.0.0": {
+      "sha512": "yNH0h8GLRbAf+PU5HNVLZ5hNeyq9mDVmRKO9xuZsme/znUYoBJlQvI0gq45gaZNlLncCHkMhR4o90MuT+gxxPw==",
+      "type": "package",
+      "path": "aspnetcore.healthchecks.redis/9.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "aspnetcore.healthchecks.redis.9.0.0.nupkg.sha512",
+        "aspnetcore.healthchecks.redis.nuspec",
+        "icon.png",
+        "lib/net8.0/HealthChecks.Redis.dll",
+        "lib/net8.0/HealthChecks.Redis.xml",
+        "lib/netstandard2.0/HealthChecks.Redis.dll",
+        "lib/netstandard2.0/HealthChecks.Redis.xml"
+      ]
+    },
     "Azure.Core/1.44.1": {
       "sha512": "YyznXLQZCregzHvioip07/BkzjuWNXogJEVz9T5W6TwjNr17ax41YGzYMptlo2G10oLCuVPoyva62y0SIRDixg==",
       "type": "package",
@@ -1540,6 +1640,29 @@
         "opentelemetry.instrumentation.runtime.nuspec"
       ]
     },
+    "Pipelines.Sockets.Unofficial/2.2.8": {
+      "sha512": "zG2FApP5zxSx6OcdJQLbZDk2AVlN2BNQD6MorwIfV6gVj0RRxWPEp2LXAxqDGZqeNV1Zp0BNPcNaey/GXmTdvQ==",
+      "type": "package",
+      "path": "pipelines.sockets.unofficial/2.2.8",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net461/Pipelines.Sockets.Unofficial.dll",
+        "lib/net461/Pipelines.Sockets.Unofficial.xml",
+        "lib/net472/Pipelines.Sockets.Unofficial.dll",
+        "lib/net472/Pipelines.Sockets.Unofficial.xml",
+        "lib/net5.0/Pipelines.Sockets.Unofficial.dll",
+        "lib/net5.0/Pipelines.Sockets.Unofficial.xml",
+        "lib/netcoreapp3.1/Pipelines.Sockets.Unofficial.dll",
+        "lib/netcoreapp3.1/Pipelines.Sockets.Unofficial.xml",
+        "lib/netstandard2.0/Pipelines.Sockets.Unofficial.dll",
+        "lib/netstandard2.0/Pipelines.Sockets.Unofficial.xml",
+        "lib/netstandard2.1/Pipelines.Sockets.Unofficial.dll",
+        "lib/netstandard2.1/Pipelines.Sockets.Unofficial.xml",
+        "pipelines.sockets.unofficial.2.2.8.nupkg.sha512",
+        "pipelines.sockets.unofficial.nuspec"
+      ]
+    },
     "Polly.Core/8.4.2": {
       "sha512": "BpE2I6HBYYA5tF0Vn4eoQOGYTYIK1BlF5EXVgkWGn3mqUUjbXAr13J6fZVbp7Q3epRR8yshacBMlsHMhpOiV3g==",
       "type": "package",
@@ -1622,6 +1745,29 @@
         "package-readme.md",
         "polly.ratelimiting.8.4.2.nupkg.sha512",
         "polly.ratelimiting.nuspec"
+      ]
+    },
+    "StackExchange.Redis/2.8.22": {
+      "sha512": "GRA97f4cHYxBI/fKOfgs3GyKklc5is6YKM2yWbkiCZGR/JKsXIo0sRJSSeJabriJAZkKFthM0rXnULFfSbs0KA==",
+      "type": "package",
+      "path": "stackexchange.redis/2.8.22",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net461/StackExchange.Redis.dll",
+        "lib/net461/StackExchange.Redis.xml",
+        "lib/net472/StackExchange.Redis.dll",
+        "lib/net472/StackExchange.Redis.xml",
+        "lib/net6.0/StackExchange.Redis.dll",
+        "lib/net6.0/StackExchange.Redis.xml",
+        "lib/net8.0/StackExchange.Redis.dll",
+        "lib/net8.0/StackExchange.Redis.xml",
+        "lib/netcoreapp3.1/StackExchange.Redis.dll",
+        "lib/netcoreapp3.1/StackExchange.Redis.xml",
+        "lib/netstandard2.0/StackExchange.Redis.dll",
+        "lib/netstandard2.0/StackExchange.Redis.xml",
+        "stackexchange.redis.2.8.22.nupkg.sha512",
+        "stackexchange.redis.nuspec"
       ]
     },
     "System.ClientModel/1.1.0": {
@@ -1714,6 +1860,7 @@
   },
   "projectFileDependencyGroups": {
     "net10.0": [
+      "Aspire.StackExchange.Redis >= 9.1.0",
       "Azure.Identity >= 1.13.1",
       "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.0",
       "Microsoft.Azure.AppConfiguration.AspNetCore >= 8.0.0",
@@ -1729,11 +1876,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
+      "projectUniqueName": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
       "projectName": "aspire1.Web",
-      "projectPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
+      "projectPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
       "packagesPath": "C:\\Users\\rmathis\\.nuget\\packages\\",
-      "outputPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\obj\\",
+      "outputPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\rmathis\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -1770,6 +1917,10 @@
       "net10.0": {
         "targetAlias": "net10.0",
         "dependencies": {
+          "Aspire.StackExchange.Redis": {
+            "target": "Package",
+            "version": "[9.1.0, )"
+          },
           "Azure.Identity": {
             "target": "Package",
             "version": "[1.13.1, )"

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj": {}
+    "C:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj": {}
   },
   "projects": {
-    "c:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj": {
+    "C:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj",
+        "projectUniqueName": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj",
         "projectName": "aspire1.ApiService",
-        "projectPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj",
+        "projectPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\aspire1.ApiService.csproj",
         "packagesPath": "C:\\Users\\rmathis\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\obj\\",
+        "outputPath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.ApiService\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rmathis\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -48,6 +48,10 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "dependencies": {
+            "Aspire.StackExchange.Redis": {
+              "target": "Package",
+              "version": "[9.1.0, )"
+            },
             "Azure.Identity": {
               "target": "Package",
               "version": "[1.13.1, )"

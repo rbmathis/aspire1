@@ -43,6 +43,10 @@ The post-create script runs automatically and will:
 - ✅ Trust HTTPS development certificates
 - ✅ Install Aspire workload
 - ✅ Configure git for the container
+- ✅ Install Git hooks (pre-commit and pre-push)
+
+**Git Protections:**
+Pre-commit and pre-push hooks are automatically installed to enforce branching strategy. Direct commits and pushes to `main`/`master` branches are blocked. Always use feature branches for development.
 
 ### 3. Start Developing
 
@@ -235,6 +239,26 @@ git config --global --add safe.directory /workspaces/aspire1
 
 # Verify git status
 git status
+
+# Reinstall Git hooks (if needed)
+cp scripts/hooks/* .git/hooks/
+chmod +x .git/hooks/*
+```
+
+### Git Hooks Not Working
+
+If pre-commit or pre-push hooks aren't preventing commits to main/master:
+
+```bash
+# Check if hooks are installed
+ls -la .git/hooks/
+
+# Make hooks executable
+chmod +x .git/hooks/pre-commit
+chmod +x .git/hooks/pre-push
+
+# Test hook manually
+.git/hooks/pre-commit
 ```
 
 ## 🔄 Updating the DevContainer

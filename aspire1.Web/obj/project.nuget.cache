@@ -1,9 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "td2IUYpflH8=",
+  "dgSpecHash": "ehefsKMQgZg=",
   "success": true,
-  "projectFilePath": "c:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
+  "projectFilePath": "C:\\Users\\rmathis\\source\\aspire1\\aspire1.Web\\aspire1.Web.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\rmathis\\.nuget\\packages\\aspire.stackexchange.redis\\9.1.0\\aspire.stackexchange.redis.9.1.0.nupkg.sha512",
+    "C:\\Users\\rmathis\\.nuget\\packages\\aspnetcore.healthchecks.redis\\9.0.0\\aspnetcore.healthchecks.redis.9.0.0.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\azure.core\\1.44.1\\azure.core.1.44.1.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\azure.data.appconfiguration\\1.4.1\\azure.data.appconfiguration.1.4.1.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\azure.identity\\1.13.1\\azure.identity.1.13.1.nupkg.sha512",
@@ -40,9 +42,11 @@
     "C:\\Users\\rmathis\\.nuget\\packages\\opentelemetry.instrumentation.aspnetcore\\1.13.0\\opentelemetry.instrumentation.aspnetcore.1.13.0.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\opentelemetry.instrumentation.http\\1.13.0\\opentelemetry.instrumentation.http.1.13.0.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\opentelemetry.instrumentation.runtime\\1.13.0\\opentelemetry.instrumentation.runtime.1.13.0.nupkg.sha512",
+    "C:\\Users\\rmathis\\.nuget\\packages\\pipelines.sockets.unofficial\\2.2.8\\pipelines.sockets.unofficial.2.2.8.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\polly.core\\8.4.2\\polly.core.8.4.2.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\polly.extensions\\8.4.2\\polly.extensions.8.4.2.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\polly.ratelimiting\\8.4.2\\polly.ratelimiting.8.4.2.nupkg.sha512",
+    "C:\\Users\\rmathis\\.nuget\\packages\\stackexchange.redis\\2.8.22\\stackexchange.redis.2.8.22.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\system.clientmodel\\1.1.0\\system.clientmodel.1.1.0.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\system.memory.data\\6.0.0\\system.memory.data.6.0.0.nupkg.sha512",
     "C:\\Users\\rmathis\\.nuget\\packages\\system.security.cryptography.protecteddata\\4.5.0\\system.security.cryptography.protecteddata.4.5.0.nupkg.sha512"
