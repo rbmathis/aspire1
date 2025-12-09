@@ -109,8 +109,21 @@ public static class Extensions
                 });
                 Console.WriteLine("✅ Application Insights telemetry enabled");
             }
+            catch (ArgumentException ex)
+            {
+                // Invalid connection string format
+                Console.WriteLine($"⚠️  Invalid Application Insights configuration: {ex.Message}");
+                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Authentication/authorization failure
+                Console.WriteLine($"⚠️  Application Insights authentication failed: {ex.Message}");
+                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+            }
             catch (Exception ex)
             {
+                // Unexpected errors
                 Console.WriteLine($"⚠️  Application Insights connection failed: {ex.Message}");
                 Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
             }
