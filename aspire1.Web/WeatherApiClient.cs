@@ -2,6 +2,10 @@ namespace aspire1.Web;
 
 public class WeatherApiClient(HttpClient httpClient)
 {
+    // Constants for telemetry to avoid string allocations
+    private const string SuccessTrue = "true";
+    private const string SuccessFalse = "false";
+
     public async Task<WeatherForecast[]> GetWeatherAsync(int maxItems = 10, CancellationToken cancellationToken = default)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -35,7 +39,7 @@ public class WeatherApiClient(HttpClient httpClient)
             Microsoft.Extensions.Hosting.ApplicationMetrics.ApiCallDuration.Record(
                 stopwatch.ElapsedMilliseconds,
                 new KeyValuePair<string, object?>("endpoint", "weatherforecast"),
-                new KeyValuePair<string, object?>("success", success.ToString().ToLower()));
+                new KeyValuePair<string, object?>("success", success ? SuccessTrue : SuccessFalse));
         }
     }
 }
