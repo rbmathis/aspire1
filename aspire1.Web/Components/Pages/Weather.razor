@@ -1,16 +1,23 @@
 ﻿@page "/weather"
 @attribute [StreamRendering(true)]
 @attribute [OutputCache(Duration = 5)]
+@using Microsoft.FeatureManagement
 
 @inject WeatherApiClient WeatherApi
+@inject IFeatureManager FeatureManager
 
 <PageTitle>Weather</PageTitle>
 
 <h1>Weather</h1>
 
-<p>This component demonstrates showing data loaded from a backend API service.</p>
-
-@if (forecasts == null)
+@if (!featureEnabled)
+{
+    <div class="alert alert-warning">
+        <h4>⚠️ Feature Disabled</h4>
+        <p>The weather forecast feature is currently disabled. Please contact your administrator.</p>
+    </div>
+}
+else if (forecasts == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -41,9 +48,16 @@ else
 
 @code {
     private WeatherForecast[]? forecasts;
+    private bool featureEnabled = true;
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await WeatherApi.GetWeatherAsync();
+        // Check if feature is enabled
+        featureEnabled = await FeatureManager.IsEnabledAsync("WeatherForecast");
+        
+        if (featureEnabled)
+        {
+            forecasts = await WeatherApi.GetWeatherAsync();
+        }
     }
 }

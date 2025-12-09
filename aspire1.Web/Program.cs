@@ -1,10 +1,31 @@
 using aspire1.Web;
 using aspire1.Web.Components;
+using Azure.Identity;
+using Microsoft.FeatureManagement;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
+
+// Add Azure App Configuration with feature flags
+var appConfigEndpoint = builder.Configuration["AppConfig:Endpoint"];
+if (!string.IsNullOrEmpty(appConfigEndpoint))
+{
+    builder.Configuration.AddAzureAppConfiguration(options =>
+    {
+        options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
+               .UseFeatureFlags(featureFlagOptions =>
+               {
+                   featureFlagOptions.CacheExpirationInterval = TimeSpan.FromSeconds(30);
+                   // Use sentinel key for cache refresh
+                   featureFlagOptions.Select("*", builder.Environment.EnvironmentName);
+               });
+    });
+}
+
+// Add feature management
+builder.Services.AddFeatureManagement();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -33,6 +54,12 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.UseOutputCache();
+
+// Enable Azure App Configuration middleware for dynamic refresh
+if (!string.IsNullOrEmpty(builder.Configuration["AppConfig:Endpoint"]))
+{
+    app.UseAzureAppConfiguration();
+}
 
 app.MapStaticAssets();
 

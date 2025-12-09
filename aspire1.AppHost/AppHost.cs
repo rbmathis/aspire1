@@ -5,6 +5,9 @@ var version = builder.Configuration["VERSION"] ?? "1.0.0-local";
 var commitSha = builder.Configuration["COMMIT_SHA"] ??
                 Environment.GetEnvironmentVariable("GITHUB_SHA")?[..7] ?? "local";
 
+// Add Azure App Configuration (deployed as existing resource)
+var appConfig = builder.AddAzureAppConfiguration("appconfig");
+
 var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
     .WithHttpHealthCheck("/health")
     .WithEnvironment("APP_VERSION", version)
@@ -22,6 +25,7 @@ builder.AddProject<Projects.aspire1_Web>("webfrontend")
     .WithEnvironment("APP_VERSION", version)
     .WithEnvironment("COMMIT_SHA", commitSha)
     .WithReference(apiService)
+    .WithReference(appConfig)
     .WaitFor(apiService)
     .WithAnnotation(new ContainerImageAnnotation
     {

@@ -1,7 +1,7 @@
 {
   "name": "aspire1 - .NET Aspire Development",
   "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0-noble",
-  
+
   "features": {
     "ghcr.io/devcontainers/features/azure-cli:1": {
       "version": "latest",
@@ -22,7 +22,7 @@
 
   "hostRequirements": {
     "cpus": 4,
-    "memory": "8gb",
+    "memory": "16gb",
     "storage": "50gb"
   },
 
@@ -66,12 +66,7 @@
     }
   },
 
-  "forwardPorts": [
-    15888,
-    18848,
-    7002,
-    5188
-  ],
+  "forwardPorts": [15888, 18848, 7002, 5188],
 
   "portsAttributes": {
     "15888": {
@@ -105,9 +100,7 @@
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aspire,target=/home/vscode/.aspire,type=bind,consistency=cached"
   ],
 
-  "runArgs": [
-    "--name=aspire1-devcontainer"
-  ],
+  "runArgs": ["--name=aspire1-devcontainer"],
 
   "containerEnv": {
     "TZ": "UTC"

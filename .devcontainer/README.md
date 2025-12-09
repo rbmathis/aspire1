@@ -24,17 +24,20 @@ This devcontainer provides a complete development environment for the aspire1 so
 ### 1. Open in DevContainer
 
 **VS Code:**
+
 1. Install "Dev Containers" extension (`ms-vscode-remote.remote-containers`)
 2. Open command palette (Ctrl+Shift+P / Cmd+Shift+P)
 3. Select: **Dev Containers: Reopen in Container**
 
 **GitHub Codespaces:**
+
 1. Click "Code" → "Codespaces" → "Create codespace on main"
 2. Container will automatically build and configure
 
 ### 2. Verify Setup
 
 The post-create script runs automatically and will:
+
 - ✅ Install MinVer CLI
 - ✅ Restore NuGet packages
 - ✅ Trust HTTPS development certificates
@@ -56,12 +59,12 @@ dotnet run --project aspire1.AppHost
 
 The following ports are automatically forwarded:
 
-| Port  | Service              | Auto-Forward |
-|-------|----------------------|--------------|
-| 15888 | Aspire Dashboard (HTTP) | Notify    |
-| 18848 | Aspire Dashboard (HTTPS) | Notify   |
-| 7002  | ApiService           | Silent       |
-| 5188  | Web (Blazor)         | Silent       |
+| Port  | Service                  | Auto-Forward |
+| ----- | ------------------------ | ------------ |
+| 15888 | Aspire Dashboard (HTTP)  | Notify       |
+| 18848 | Aspire Dashboard (HTTPS) | Notify       |
+| 7002  | ApiService               | Silent       |
+| 5188  | Web (Blazor)             | Silent       |
 
 ## 🔐 Azure Authentication
 
@@ -81,23 +84,27 @@ az account show
 ## 🛠️ Included VS Code Extensions
 
 ### .NET & Aspire
+
 - C# Dev Kit (`ms-dotnettools.csdevkit`)
 - C# (`ms-dotnettools.csharp`)
 - .NET Runtime (`ms-dotnettools.vscode-dotnet-runtime`)
 - Aspire (`microsoft-aspire.aspire-vscode`)
 
 ### Azure & Deployment
+
 - Azure GitHub Copilot (`ms-azuretools.vscode-azure-github-copilot`)
 - Azure MCP Server (`ms-azuretools.vscode-azure-mcp-server`)
 - Azure Resource Groups (`ms-azuretools.vscode-azureresourcegroups`)
 - Docker (`ms-azuretools.vscode-containers`)
 
 ### GitHub & Copilot
+
 - GitHub Copilot (`github.copilot`)
 - GitHub Copilot Chat (`github.copilot-chat`)
 - GitHub Actions (`github.vscode-github-actions`)
 
 ### Productivity
+
 - PowerShell (`ms-vscode.powershell`)
 - Python (`ms-python.python`)
 - Pylance (`ms-python.vscode-pylance`)
@@ -110,6 +117,7 @@ az account show
 ### VS Code Settings
 
 The devcontainer automatically sets:
+
 - Default solution: `aspire1.sln`
 - Auto-start Aspire dashboard: `true`
 - Exclude bin/obj from file watcher (performance)
@@ -123,6 +131,7 @@ The devcontainer automatically sets:
 ## 🎯 Common Tasks
 
 ### Build & Run
+
 ```bash
 # Restore dependencies
 dotnet restore
@@ -139,6 +148,7 @@ dotnet run --project aspire1.Web
 ```
 
 ### Versioning
+
 ```bash
 # Check current version
 minver
@@ -152,6 +162,7 @@ dotnet build
 ```
 
 ### Azure Deployment
+
 ```bash
 # Login to Azure
 azd auth login
@@ -167,6 +178,7 @@ azd monitor
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 dotnet test
@@ -186,6 +198,7 @@ dotnet test --collect:"XPlat Code Coverage"
 ## 🐛 Troubleshooting
 
 ### Dashboard Won't Start
+
 ```bash
 # Check if ports are already in use
 netstat -tuln | grep -E '15888|18848'
@@ -195,6 +208,7 @@ pkill -f aspire1.AppHost
 ```
 
 ### HTTPS Certificate Issues
+
 ```bash
 # Re-trust certificates
 dotnet dev-certs https --clean
@@ -202,6 +216,7 @@ dotnet dev-certs https --trust
 ```
 
 ### Azure CLI Issues
+
 ```bash
 # Re-login to Azure
 az logout
@@ -213,6 +228,7 @@ az account list
 ```
 
 ### Git Issues
+
 ```bash
 # Add workspace as safe directory
 git config --global --add safe.directory /workspaces/aspire1
@@ -237,6 +253,7 @@ This devcontainer works seamlessly with GitHub Codespaces:
 - **8-core machine** - Fast builds and multiple services
 
 **Cost optimization:**
+
 - Codespaces auto-stop after 30 minutes of inactivity
 - Use `azd down` before stopping to avoid Azure costs
 
