@@ -54,7 +54,7 @@ else
     {
         // Check if feature is enabled
         featureEnabled = await FeatureManager.IsEnabledAsync("WeatherForecast");
-        
+
         if (featureEnabled)
         {
             forecasts = await WeatherApi.GetWeatherAsync();

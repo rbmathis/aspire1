@@ -249,6 +249,7 @@ Update `appsettings.Development.json`:
 ## 🎯 Best Practices
 
 ### ✅ DO
+
 - Use managed identity (never connection strings in production)
 - Configure sentinel key for cache refresh (30 seconds)
 - Namespace feature flags: `FeatureName:SubFeature`
@@ -259,6 +260,7 @@ Update `appsettings.Development.json`:
 - Use local `appsettings.json` fallbacks for offline development
 
 ### ❌ DON'T
+
 - Store connection strings in code or appsettings.json
 - Use feature flags for secrets or configuration data
 - Keep flags alive indefinitely (causes tech debt)
@@ -309,6 +311,7 @@ builder.Services.AddSingleton<IFeatureManager>(new InMemoryFeatureManager(new Di
 **Problem:** Changes in Azure Portal not reflected in app
 
 **Solution:**
+
 1. Check cache expiration interval (default: 30 seconds)
 2. Verify `app.UseAzureAppConfiguration()` middleware is called
 3. Ensure managed identity has "App Configuration Data Reader" role
@@ -318,6 +321,7 @@ builder.Services.AddSingleton<IFeatureManager>(new InMemoryFeatureManager(new Di
 **Problem:** "401 Unauthorized" when accessing App Configuration
 
 **Solution:**
+
 ```bash
 # Verify Azure CLI login
 az account show
@@ -331,6 +335,7 @@ az role assignment list --assignee $USER_OBJECT_ID --all
 **Problem:** App uses local `appsettings.json` instead of Azure
 
 **Solution:**
+
 1. Ensure user secrets are set: `dotnet user-secrets list`
 2. Verify endpoint format: `https://appconfig-aspire1-dev.azconfig.io`
 3. Check environment: `ASPNETCORE_ENVIRONMENT=Development`
@@ -344,6 +349,7 @@ az role assignment list --assignee $USER_OBJECT_ID --all
 ---
 
 **Next Steps:**
+
 1. Set up App Configuration in Azure
 2. Configure managed identity
 3. Test feature flags locally

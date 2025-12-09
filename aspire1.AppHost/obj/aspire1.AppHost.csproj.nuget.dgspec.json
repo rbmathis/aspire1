@@ -54,6 +54,10 @@
               "version": "[13.0.2, )",
               "autoReferenced": true
             },
+            "Aspire.Hosting.Azure.AppConfiguration": {
+              "target": "Package",
+              "version": "[13.0.2, )"
+            },
             "Aspire.Hosting.Orchestration.win-x64": {
               "target": "Package",
               "version": "[13.0.2, )",

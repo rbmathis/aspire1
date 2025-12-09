@@ -54,6 +54,17 @@ hooks:
         echo "Commit SHA: $COMMIT_SHA"
         azd env set COMMIT_SHA $COMMIT_SHA
 
+  # Configure App Configuration after provisioning
+  postprovision:
+    windows:
+      shell: pwsh
+      run: ./infra/hooks/postprovision.ps1
+    posix:
+      shell: sh
+      run: |
+        chmod +x ./infra/hooks/postprovision.sh
+        ./infra/hooks/postprovision.sh
+
   # Tag containers before packaging
   prepackage:
     windows:
