@@ -107,33 +107,46 @@ public static class Extensions
                     }
                     return level >= LogLevel.Warning;
                 });
-                Console.WriteLine("✅ Application Insights telemetry enabled");
+                
+                // Log Application Insights configuration using structured logging
+                LogApplicationInsightsStatus(builder, "Application Insights telemetry enabled", LogLevel.Information);
             }
             catch (ArgumentException ex)
             {
                 // Invalid connection string format
-                Console.WriteLine($"⚠️  Invalid Application Insights configuration: {ex.Message}");
-                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+                LogApplicationInsightsStatus(builder, $"Invalid Application Insights configuration: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
             }
             catch (UnauthorizedAccessException ex)
             {
                 // Authentication/authorization failure
-                Console.WriteLine($"⚠️  Application Insights authentication failed: {ex.Message}");
-                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+                LogApplicationInsightsStatus(builder, $"Application Insights authentication failed: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
             }
             catch (Exception ex)
             {
                 // Unexpected errors
-                Console.WriteLine($"⚠️  Application Insights connection failed: {ex.Message}");
-                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+                LogApplicationInsightsStatus(builder, $"Application Insights connection failed: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
             }
         }
         else
         {
-            Console.WriteLine("⚠️  Application Insights not configured (offline mode)");
+            LogApplicationInsightsStatus(builder, "Application Insights not configured (offline mode)", LogLevel.Information);
         }
 
         return builder;
+    }
+
+    private static void LogApplicationInsightsStatus<TBuilder>(TBuilder builder, string message, LogLevel logLevel, Exception? exception = null) where TBuilder : IHostApplicationBuilder
+    {
+        // Create a temporary logger factory to log during configuration
+        // This ensures messages are captured in Application Insights with proper context
+        using var loggerFactory = LoggerFactory.Create(loggingBuilder =>
+        {
+            loggingBuilder.AddConfiguration(builder.Configuration.GetSection("Logging"));
+            loggingBuilder.AddConsole();
+        });
+        
+        var logger = loggerFactory.CreateLogger("Microsoft.Extensions.Hosting.Extensions");
+        logger.Log(logLevel, exception, message);
     }
 
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
