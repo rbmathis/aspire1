@@ -18,6 +18,7 @@ public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
+    private const string LoggerCategoryName = "Microsoft.Extensions.Hosting.Extensions";
 
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -107,33 +108,69 @@ public static class Extensions
                     }
                     return level >= LogLevel.Warning;
                 });
-                Console.WriteLine("✅ Application Insights telemetry enabled");
+                
+                // Log Application Insights configuration using structured logging
+                LogApplicationInsightsStatus(builder, "Application Insights telemetry enabled", LogLevel.Information);
             }
             catch (ArgumentException ex)
             {
                 // Invalid connection string format
-                Console.WriteLine($"⚠️  Invalid Application Insights configuration: {ex.Message}");
-                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+                LogApplicationInsightsStatus(builder, $"Invalid Application Insights configuration: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
             }
             catch (UnauthorizedAccessException ex)
             {
                 // Authentication/authorization failure
-                Console.WriteLine($"⚠️  Application Insights authentication failed: {ex.Message}");
-                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+                LogApplicationInsightsStatus(builder, $"Application Insights authentication failed: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
             }
             catch (Exception ex)
             {
                 // Unexpected errors
-                Console.WriteLine($"⚠️  Application Insights connection failed: {ex.Message}");
-                Console.WriteLine("   Continuing in offline mode - telemetry will only go to OTLP/Dashboard");
+                LogApplicationInsightsStatus(builder, $"Application Insights connection failed: {ex.Message}. Continuing in offline mode - telemetry will only go to OTLP/Dashboard", LogLevel.Warning, ex);
             }
         }
         else
         {
-            Console.WriteLine("⚠️  Application Insights not configured (offline mode)");
+            LogApplicationInsightsStatus(builder, "Application Insights not configured (offline mode)", LogLevel.Information);
         }
 
         return builder;
+    }
+
+    private static void LogApplicationInsightsStatus<TBuilder>(TBuilder builder, string message, LogLevel logLevel, Exception? exception = null) where TBuilder : IHostApplicationBuilder
+    {
+        // Create a temporary logger factory to log during configuration phase
+        // These messages are about Application Insights setup itself, so they use console logging
+        // Once the app is running, Application Insights will capture all subsequent logs
+        using var loggerFactory = LoggerFactory.Create(loggingBuilder =>
+        {
+            loggingBuilder.AddConfiguration(builder.Configuration.GetSection("Logging"));
+            loggingBuilder.AddConsole();
+        });
+        
+        var logger = loggerFactory.CreateLogger(LoggerCategoryName);
+        
+        // Use the appropriate log method based on log level
+        switch (logLevel)
+        {
+            case LogLevel.Warning:
+                if (exception != null)
+                    logger.LogWarning(exception, message);
+                else
+                    logger.LogWarning(message);
+                break;
+            case LogLevel.Error:
+                if (exception != null)
+                    logger.LogError(exception, message);
+                else
+                    logger.LogError(message);
+                break;
+            default:
+                if (exception != null)
+                    logger.LogInformation(exception, message);
+                else
+                    logger.LogInformation(message);
+                break;
+        }
     }
 
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
