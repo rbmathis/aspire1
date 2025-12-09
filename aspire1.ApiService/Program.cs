@@ -38,15 +38,26 @@ if (!string.IsNullOrEmpty(appConfigEndpoint))
 builder.Services.AddFeatureManagement();
 
 // Add Redis distributed cache with offline-first design
-try
+var redisConnectionName = builder.Configuration.GetConnectionString("cache");
+if (!string.IsNullOrEmpty(redisConnectionName))
 {
-    builder.AddRedisClient("cache");
-    Console.WriteLine("✅ Redis cache configured successfully.");
+    try
+    {
+        builder.AddRedisClient("cache");
+        Console.WriteLine("✅ Redis distributed cache configured successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️  Warning: Could not connect to Redis: {ex.Message}");
+        Console.WriteLine("Falling back to in-memory distributed cache.");
+        builder.Services.AddDistributedMemoryCache();
+    }
 }
-catch (Exception ex)
+else
 {
-    Console.WriteLine($"⚠️  Warning: Could not connect to Redis: {ex.Message}");
-    Console.WriteLine("Application will run without distributed caching.");
+    Console.WriteLine("⚠️  Redis not configured (local development mode)");
+    Console.WriteLine("Using in-memory distributed cache as fallback.");
+    builder.Services.AddDistributedMemoryCache();
 }
 
 // Add services to the container.

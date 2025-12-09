@@ -38,27 +38,45 @@ if (!string.IsNullOrEmpty(appConfigEndpoint))
 builder.Services.AddFeatureManagement();
 
 // Add Redis distributed cache and session state with offline-first design
-try
+var redisConnectionName = builder.Configuration.GetConnectionString("cache");
+if (!string.IsNullOrEmpty(redisConnectionName))
 {
-    builder.AddRedisClient("cache");
+    try
+    {
+        builder.AddRedisClient("cache");
 
-    // Configure session state with Redis backing
+        // Configure session state with Redis backing
+        builder.Services.AddSession(options =>
+        {
+            options.Cookie.Name = ".aspire1.Session";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.IdleTimeout = TimeSpan.FromMinutes(30); // Sliding expiration
+            options.Cookie.MaxAge = TimeSpan.FromHours(8);  // Absolute maximum
+        });
+
+        Console.WriteLine("✅ Redis cache and session state configured successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️  Warning: Could not connect to Redis: {ex.Message}");
+        Console.WriteLine("Falling back to in-memory cache and session state.");
+        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddSession();
+    }
+}
+else
+{
+    Console.WriteLine("⚠️  Redis not configured (local development mode)");
+    Console.WriteLine("Using in-memory cache and session state as fallback.");
+    builder.Services.AddDistributedMemoryCache();
     builder.Services.AddSession(options =>
     {
         options.Cookie.Name = ".aspire1.Session";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.IdleTimeout = TimeSpan.FromMinutes(30); // Sliding expiration
-        options.Cookie.MaxAge = TimeSpan.FromHours(8);  // Absolute maximum
+        options.IdleTimeout = TimeSpan.FromMinutes(30);
     });
-
-    Console.WriteLine("✅ Redis cache and session state configured successfully.");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"⚠️  Warning: Could not connect to Redis: {ex.Message}");
-    Console.WriteLine("Application will run without distributed caching and sessions.");
 }
 
 // Add services to the container.
