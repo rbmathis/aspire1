@@ -51,16 +51,16 @@ This document describes the Application Insights telemetry implementation for th
 - **Tracks:** Button clicks with page and range tags
 - **Cardinality:** 4 ranges (reduced from potentially thousands)
 
-### 4. **Weather API Telemetry** (ApiService)
+### 4. **Weather API Telemetry** (WeatherService)
 
-- **Location:** [`aspire1.ApiService/Program.cs`](aspire1.ApiService/Program.cs)
+- **Location:** [`aspire1.WeatherService/Program.cs`](aspire1.WeatherService/Program.cs)
 - **Tracks:**
   - Total API calls with endpoint and feature_enabled tags
   - Sunny forecasts with temperature_range tags
 
-### 5. **Cache Performance Telemetry** (ApiService)
+### 5. **Cache Performance Telemetry** (WeatherService)
 
-- **Location:** [`aspire1.ApiService/Services/CachedWeatherService.cs`](aspire1.ApiService/Services/CachedWeatherService.cs)
+- **Location:** [`aspire1.WeatherService/Services/CachedWeatherService.cs`](aspire1.WeatherService/Services/CachedWeatherService.cs)
 - **Tracks:** Cache hits and misses with entity type tags
 
 ### 6. **API Client Telemetry** (Web)
@@ -73,7 +73,7 @@ This document describes the Application Insights telemetry implementation for th
 - **Location:** [`aspire1.AppHost/AppHost.cs`](aspire1.AppHost/AppHost.cs)
 - **Package:** `Aspire.Hosting.Azure.ApplicationInsights` v13.0.2
 - **Adds:** Application Insights resource with offline-first design
-- **References:** Both apiservice and webfrontend services
+- **References:** Both weatherservice and webfrontend services
 
 ### 8. **Infrastructure as Code**
 
@@ -261,7 +261,7 @@ All ARCHITECTURE.md files updated with telemetry documentation:
 
 - ✅ [`/ARCHITECTURE.md`](ARCHITECTURE.md) - Added observability section
 - ✅ [`aspire1.ServiceDefaults/ARCHITECTURE.md`](aspire1.ServiceDefaults/ARCHITECTURE.md) - Custom metrics documentation
-- ✅ [`aspire1.ApiService/ARCHITECTURE.md`](aspire1.ApiService/ARCHITECTURE.md) - API telemetry tracking
+- ✅ [`aspire1.WeatherService/ARCHITECTURE.md`](aspire1.WeatherService/ARCHITECTURE.md) - API telemetry tracking
 - ✅ [`aspire1.Web/ARCHITECTURE.md`](aspire1.Web/ARCHITECTURE.md) - Web telemetry tracking
 - ✅ [`aspire1.AppHost/ARCHITECTURE.md`](aspire1.AppHost/ARCHITECTURE.md) - App Insights resource configuration
 

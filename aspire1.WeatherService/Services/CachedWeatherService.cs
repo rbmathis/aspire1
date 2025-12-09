@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 
-namespace aspire1.ApiService.Services;
+namespace aspire1.WeatherService.Services;
 
 public class CachedWeatherService
 {

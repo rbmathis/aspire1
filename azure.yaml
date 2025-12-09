@@ -6,8 +6,8 @@ metadata:
 
 # Service definitions for Azure Container Apps
 services:
-  apiservice:
-    project: ./aspire1.ApiService
+  weatherservice:
+    project: ./aspire1.WeatherService
     language: dotnet
     host: containerapp
 

@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\aspire1.ApiService\aspire1.ApiService.csproj" />
+    <ProjectReference Include="..\aspire1.WeatherService\aspire1.WeatherService.csproj" />
     <ProjectReference Include="..\aspire1.Web\aspire1.Web.csproj" />
   </ItemGroup>
 

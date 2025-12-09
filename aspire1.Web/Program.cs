@@ -44,6 +44,10 @@ if (!string.IsNullOrEmpty(redisConnectionName))
     try
     {
         builder.AddRedisClient("cache");
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionName;
+        });
 
         // Configure session state with Redis backing
         builder.Services.AddSession(options =>
@@ -88,10 +92,10 @@ builder.Services.AddOutputCache();
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
     {
         // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
-        // When running through AppHost, this resolves to the apiservice container.
+        // When running through AppHost, this resolves to the weatherservice container.
         // When running standalone, fall back to localhost for debugging.
-        var serviceUrl = builder.Configuration["services:apiservice:https:0"]
-                        ?? builder.Configuration["services:apiservice:http:0"]
+        var serviceUrl = builder.Configuration["services:weatherservice:https:0"]
+                        ?? builder.Configuration["services:weatherservice:http:0"]
                         ?? "http://localhost:7002"; // Fallback for standalone debugging
 
         client.BaseAddress = new Uri(serviceUrl);

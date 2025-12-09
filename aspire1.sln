@@ -7,11 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aspire1.AppHost", "aspire1.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aspire1.ServiceDefaults", "aspire1.ServiceDefaults\aspire1.ServiceDefaults.csproj", "{28F853AA-60BF-4940-84C5-38C3615D3BC8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aspire1.ApiService", "aspire1.ApiService\aspire1.ApiService.csproj", "{691AE6B1-16F0-4058-B18D-A60C71D26D09}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aspire1.WeatherService", "aspire1.WeatherService\aspire1.WeatherService.csproj", "{691AE6B1-16F0-4058-B18D-A60C71D26D09}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aspire1.Web", "aspire1.Web\aspire1.Web.csproj", "{75CCC988-9E39-4FDA-A483-15163A11C78E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aspire1.ApiService.Tests", "aspire1.ApiService.Tests\aspire1.ApiService.Tests.csproj", "{41DB2543-9D45-4A51-BD5B-A88C1C9E5594}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aspire1.WeatherService.Tests", "aspire1.WeatherService.Tests\aspire1.WeatherService.Tests.csproj", "{41DB2543-9D45-4A51-BD5B-A88C1C9E5594}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aspire1.Web.Tests", "aspire1.Web.Tests\aspire1.Web.Tests.csproj", "{32BC524E-900D-49C4-BABD-7F42C27D0CA6}"
 EndProject

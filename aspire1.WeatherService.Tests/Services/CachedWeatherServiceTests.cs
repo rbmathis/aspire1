@@ -1,10 +1,10 @@
-using aspire1.ApiService.Services;
+using aspire1.WeatherService.Services;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 
-namespace aspire1.ApiService.Tests.Services;
+namespace aspire1.WeatherService.Tests.Services;
 
 public class CachedWeatherServiceTests
 {

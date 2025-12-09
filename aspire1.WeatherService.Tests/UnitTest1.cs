@@ -1,4 +1,4 @@
-﻿namespace aspire1.ApiService.Tests;
+﻿namespace aspire1.WeatherService.Tests;
 
 public class UnitTest1
 {

@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <AssemblyName>aspire1.WeatherService.Tests</AssemblyName>
+    <RootNamespace>aspire1.WeatherService.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\aspire1.ApiService\aspire1.ApiService.csproj" />
+    <ProjectReference Include="..\aspire1.WeatherService\aspire1.WeatherService.csproj" />
   </ItemGroup>
 
 </Project>
