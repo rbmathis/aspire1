@@ -137,8 +137,9 @@ public static class Extensions
 
     private static void LogApplicationInsightsStatus<TBuilder>(TBuilder builder, string message, LogLevel logLevel, Exception? exception = null) where TBuilder : IHostApplicationBuilder
     {
-        // Create a temporary logger factory to log during configuration
-        // This ensures messages are captured in Application Insights with proper context
+        // Create a temporary logger factory to log during configuration phase
+        // These messages are about Application Insights setup itself, so they use console logging
+        // Once the app is running, Application Insights will capture all subsequent logs
         using var loggerFactory = LoggerFactory.Create(loggingBuilder =>
         {
             loggingBuilder.AddConfiguration(builder.Configuration.GetSection("Logging"));
@@ -146,7 +147,38 @@ public static class Extensions
         });
         
         var logger = loggerFactory.CreateLogger("Microsoft.Extensions.Hosting.Extensions");
-        logger.Log(logLevel, exception, message);
+        
+        // Use the appropriate log method based on log level
+        if (exception != null)
+        {
+            switch (logLevel)
+            {
+                case LogLevel.Warning:
+                    logger.LogWarning(exception, message);
+                    break;
+                case LogLevel.Error:
+                    logger.LogError(exception, message);
+                    break;
+                default:
+                    logger.LogInformation(exception, message);
+                    break;
+            }
+        }
+        else
+        {
+            switch (logLevel)
+            {
+                case LogLevel.Warning:
+                    logger.LogWarning(message);
+                    break;
+                case LogLevel.Error:
+                    logger.LogError(message);
+                    break;
+                default:
+                    logger.LogInformation(message);
+                    break;
+            }
+        }
     }
 
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
