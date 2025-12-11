@@ -44,6 +44,7 @@ public class ResourceApiClient(HttpClient httpClient)
 builder.Services.AddHttpClient<ResourceApiClient>(client =>
 {
     // Use service discovery - references backend service directly
+    // Note: For production, add configuration fallbacks like WeatherApiClient
     client.BaseAddress = new("https+http://weatherservice");
 });
 ```
