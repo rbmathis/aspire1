@@ -512,7 +512,7 @@ public class WebIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task WeatherPage_CallsApiService()
+    public async Task WeatherPage_CallsWeatherService()
     {
         // Act
         var response = await _client.GetAsync("/weather");

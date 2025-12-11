@@ -107,7 +107,7 @@ Agents can query the `.mcp-server/` for:
 - Constraint validation
 - Integration point validation
 
-Example agent query: "Get dependencies for ApiService" → MCP returns list of dependent services and constraints.
+Example agent query: "Get dependencies for WeatherService" → MCP returns list of dependent services and constraints.
 
 ### Coordination Rules for Agents
 

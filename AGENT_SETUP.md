@@ -33,7 +33,6 @@ Each service now has a `.agent-context.json` defining:
 
 **Files**:
 - [aspire1.Web/.agent-context.json](aspire1.Web/.agent-context.json)
-- [aspire1.ApiService/.agent-context.json](aspire1.ApiService/.agent-context.json)
 - [aspire1.WeatherService/.agent-context.json](aspire1.WeatherService/.agent-context.json)
 - [aspire1.ServiceDefaults/.agent-context.json](aspire1.ServiceDefaults/.agent-context.json)
 
@@ -125,9 +124,9 @@ If running one agent at a time:
 ./scripts/build/build-web.sh
 # Make changes to aspire1.Web/
 
-# Agent 2: Build and work on API
-./scripts/build/build-api.sh
-# Make changes to aspire1.ApiService/
+# Agent 2: Build and work on Weather
+./scripts/build/build-weather.sh
+# Make changes to aspire1.WeatherService/
 ```
 
 ### For Parallel Multi-Agent Development
@@ -138,10 +137,7 @@ Launch agents in parallel:
 # Terminal 1: Web Agent
 ./scripts/build/build-web.sh && dotnet watch run --project aspire1.Web
 
-# Terminal 2: API Agent
-./scripts/build/build-api.sh && dotnet watch run --project aspire1.ApiService
-
-# Terminal 3: Weather Agent
+# Terminal 2: Weather Agent
 ./scripts/build/build-weather.sh && dotnet watch run --project aspire1.WeatherService
 
 # Terminal 4: Infrastructure Agent
@@ -177,12 +173,11 @@ dotnet test aspire1.sln --no-build -p:ParallelizeTestCollections=true
 
 ### ✅ SAFE - Can work simultaneously
 - web-agent modifying Components/ while weather-agent modifies Services/
-- api-agent adding new endpoints while weather-agent changes data models
 - infra-agent deploying resources while other agents develop
 - All agents building their own services in parallel
 
 ### ⚠️ REQUIRES COORDINATION
-- Any change to `aspire1.ServiceDefaults/` (affects all 3 services)
+- Any change to `aspire1.ServiceDefaults/` (affects both services)
 - Adding/removing service-to-service integration points
 - Changing health check endpoint formats
 - Modifying shared DTOs (WeatherForecast contract)
@@ -236,8 +231,6 @@ dotnet test aspire1.sln --no-build -p:ParallelizeTestCollections=true
 │   └── README.md
 ├── aspire1.Web/
 │   └── .agent-context.json      # Web service boundaries
-├── aspire1.ApiService/
-│   └── .agent-context.json      # API service boundaries
 ├── aspire1.WeatherService/
 │   └── .agent-context.json      # Weather service boundaries
 ├── aspire1.ServiceDefaults/

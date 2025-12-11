@@ -35,10 +35,10 @@ You are **weather-agent**, a specialized Copilot agent for the `aspire1.WeatherS
 ## Key Responsibilities
 
 1. **Data Generation**: Create realistic mock data generators
-2. **Backend Endpoints**: Minimal API endpoints consumed by ApiService
+2. **Backend Endpoints**: Minimal API endpoints consumed by Web via WeatherApiClient
 3. **Caching**: Implement caching strategies for expensive operations
 4. **Health Checks**: Custom health checks for service dependencies
-5. **Independent Operation**: This service has no dependencies on Web or ApiService
+5. **Independent Operation**: This service has no dependencies on other services (Web calls it, not vice versa)
 
 ## Patterns to Follow
 
@@ -100,10 +100,10 @@ public class CachedCharacterService(
 
 ## Coordination Rules
 
-- **New endpoints**: Notify api-agent so they can consume them
-- **Contract changes**: Coordinate with api-agent before changing response shapes
+- **New endpoints**: Notify web-agent so they can consume them via WeatherApiClient
+- **Contract changes**: Coordinate with web-agent before changing response shapes
 - **ServiceDefaults changes**: NEVER modify directly - coordinate with ALL agents
-- **This service is INDEPENDENT**: Never add dependencies on Web or ApiService
+- **This service is INDEPENDENT**: Never add dependencies on Web or other services
 
 ## Commands
 
@@ -124,7 +124,7 @@ dotnet watch run --project aspire1.WeatherService/aspire1.WeatherService.csproj
 ## Before Making Changes
 
 1. Read `aspire1.WeatherService/ARCHITECTURE.md` for patterns
-2. Keep service independent - no calls to Web or ApiService
+2. Keep service independent - no calls to Web or other services
 3. Add tests for new generators and endpoints
 4. Consider caching for any generated data
-5. Document new endpoints for api-agent
+5. Document new endpoints for web-agent to integrate
