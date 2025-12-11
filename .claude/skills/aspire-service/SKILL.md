@@ -16,27 +16,15 @@ All services follow this structure:
 
 ## Adding a New Endpoint
 
-### In WeatherService (backend data service):
+**Current Architecture**: This solution uses a **two-tier architecture** where the Web frontend directly calls backend services like WeatherService. There is no ApiService intermediary layer.
+
+### In WeatherService (backend service):
 
 ```csharp
 // In Program.cs
 app.MapGet("/{resource}", (IDataGenerator generator) => generator.Generate())
     .WithName("Get{Resource}")
     .WithOpenApi();
-```
-
-### In ApiService (API gateway):
-
-```csharp
-// In Program.cs
-app.MapGet("/api/{resource}", async (HttpClient backendClient, CancellationToken ct) =>
-{
-    var data = await backendClient.GetFromJsonAsync<ResourceDto[]>("/{resource}", ct);
-    return Results.Ok(data);
-})
-.WithName("GetApi{Resource}")
-.WithOpenApi()
-.Produces<ResourceDto[]>(StatusCodes.Status200OK);
 ```
 
 ### In Web (frontend client):
@@ -47,14 +35,17 @@ public class ResourceApiClient(HttpClient httpClient)
 {
     public async Task<Resource[]> GetAsync(CancellationToken ct = default)
     {
-        return await httpClient.GetFromJsonAsync<Resource[]>("/api/{resource}", ct) ?? [];
+        // Call backend service directly (e.g., "weatherservice")
+        return await httpClient.GetFromJsonAsync<Resource[]>("/{resource}", ct) ?? [];
     }
 }
 
 // Register in Program.cs
 builder.Services.AddHttpClient<ResourceApiClient>(client =>
 {
-    client.BaseAddress = new("https+http://apiservice");
+    // Use service discovery - references backend service directly
+    // Note: For production, add configuration fallbacks like WeatherApiClient
+    client.BaseAddress = new("https+http://weatherservice");
 });
 ```
 
@@ -63,10 +54,38 @@ builder.Services.AddHttpClient<ResourceApiClient>(client =>
 When adding new services, register them in `aspire1.AppHost/AppHost.cs`:
 
 ```csharp
-var newService = builder.AddProject<Projects.aspire1_NewService>("newservice");
+// Add backend service
+var newService = builder.AddProject<Projects.aspire1_NewService>("newservice")
+    .WithHttpHealthCheck("/health");
 
-var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
-    .WithReference(newService);  // Add reference for service discovery
+// Web frontend references backend service directly
+var webFrontend = builder.AddProject<Projects.aspire1_Web>("webfrontend")
+    .WithExternalHttpEndpoints()
+    .WithReference(newService)  // Direct reference for service discovery
+    .WaitFor(newService);
+```
+
+### Future: Three-Tier Architecture with API Gateway
+
+If you need to add an API gateway layer (ApiService) in the future:
+
+```csharp
+// In ApiService (API gateway pattern - not currently implemented):
+app.MapGet("/api/{resource}", async (HttpClient backendClient, CancellationToken ct) =>
+{
+    var data = await backendClient.GetFromJsonAsync<ResourceDto[]>("/{resource}", ct);
+    return Results.Ok(data);
+})
+.WithName("GetApi{Resource}")
+.WithOpenApi()
+.Produces<ResourceDto[]>(StatusCodes.Status200OK);
+
+// In AppHost for three-tier:
+var backend = builder.AddProject<Projects.aspire1_BackendService>("backend");
+var api = builder.AddProject<Projects.aspire1_ApiService>("apiservice")
+    .WithReference(backend);
+var web = builder.AddProject<Projects.aspire1_Web>("webfrontend")
+    .WithReference(api);  // Web calls API, API calls backend
 ```
 
 ## Health Check Pattern
