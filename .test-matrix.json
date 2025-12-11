@@ -2,19 +2,12 @@
   "description": "Test execution matrix for parallel test runs across agent boundaries",
   "parallelGroups": [
     {
-      "name": "Web and Weather Tests (No API dependency)",
+      "name": "Web and Weather Tests (Can run in parallel)",
       "projects": [
         "aspire1.Web.Tests/aspire1.Web.Tests.csproj",
         "aspire1.WeatherService.Tests/aspire1.WeatherService.Tests.csproj"
       ],
       "command": "dotnet test aspire1.Web.Tests aspire1.WeatherService.Tests --no-build -p:ParallelizeTestCollections=true"
-    },
-    {
-      "name": "API Tests (Depends on Weather)",
-      "projects": [
-        "aspire1.ApiService.Tests/aspire1.ApiService.Tests.csproj"
-      ],
-      "command": "dotnet test aspire1.ApiService.Tests --no-build"
     }
   ],
   "allTests": {
@@ -23,7 +16,6 @@
   },
   "byService": {
     "web": "dotnet test aspire1.Web.Tests --no-build",
-    "api": "dotnet test aspire1.ApiService.Tests --no-build",
     "weather": "dotnet test aspire1.WeatherService.Tests --no-build"
   },
   "coverage": {
@@ -31,8 +23,8 @@
     "command": "dotnet test aspire1.sln --no-build /p:CollectCoverage=true /p:CoverageFormat=opencover"
   },
   "hints": {
-    "parallelization": "Tests in the same group can run in parallel. Groups must run sequentially due to dependencies.",
-    "agentCoordination": "When web-agent and weather-agent run tests simultaneously, they won't interfere. api-agent must wait for weather-agent completion.",
-    "failureHandling": "If api-agent tests fail, weather-agent should investigate WeatherService integration."
+    "parallelization": "Web and Weather tests can run in parallel with no dependencies.",
+    "agentCoordination": "Both web-agent and weather-agent can run tests simultaneously without interference.",
+    "failureHandling": "If web-agent tests fail on API calls, weather-agent should investigate WeatherService integration."
   }
 }

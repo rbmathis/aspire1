@@ -28,7 +28,6 @@ When a breaking change is needed:
 **Proposed Implementation Date**: YYYY-MM-DD
 **Agents Affected**: 
 - web-agent (if aspire1.Web changes)
-- api-agent (if aspire1.ApiService changes)
 - weather-agent (if aspire1.WeatherService changes)
 - infra-agent (if deployment config changes)
 
@@ -120,9 +119,8 @@ Before implementing a breaking change:
 
 1. **aspire1.ServiceDefaults** (if affected) - All other services depend on this
 2. **aspire1.WeatherService** (if affected) - No other services depend on it
-3. **aspire1.ApiService** (if affected) - Only Web depends on it
-4. **aspire1.Web** (if affected) - Depends on API
-5. **aspire1.AppHost** (rarely) - Last resort
+3. **aspire1.Web** (if affected) - Depends on WeatherService
+4. **aspire1.AppHost** (rarely) - Last resort
 
 ## Recent Changes
 
