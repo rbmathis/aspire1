@@ -45,26 +45,5 @@
   // Git configuration
   "git.autofetch": true,
   "git.confirmSync": false,
-  "git.enableSmartCommit": true,
-
-  // Agent and MCP configuration for parallel development
-  "[csharp]": {
-    "editor.defaultFormatter": "ms-dotnettools.csharp",
-    "editor.formatOnSave": true
-  },
-  "csharp.format.enable": true,
-  "csharp.inlayHints.enableInlayHints": true,
-  "agent.maxParallelAgents": 4,
-  "agent.contextSize": "large",
-  "agent.agentsFile": ".vscode/agents.json",
-  "mcp.servers": {
-    "aspire-context": {
-      "command": "node",
-      "args": [".mcp-server/mcp-server.js"],
-      "env": {
-        "MCP_MODE": "context",
-        "PROJECT_ROOT": "${workspaceFolder}"
-      }
-    }
-  }
+  "git.enableSmartCommit": true
 }
