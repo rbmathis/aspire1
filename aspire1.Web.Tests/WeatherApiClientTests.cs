@@ -11,8 +11,8 @@ public class WeatherApiClientTests
         // Arrange
         var forecasts = new[]
         {
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny"),
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 22, "Cloudy")
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, 50, "Sunny"),
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 22, 55, "Cloudy")
         };
 
         var httpClient = CreateHttpClientWithResponse(forecasts);
@@ -35,9 +35,9 @@ public class WeatherApiClientTests
         // Arrange
         var forecasts = new[]
         {
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny"),
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 22, "Cloudy"),
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(2)), 18, "Rainy")
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, 50, "Sunny"),
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 22, 55, "Cloudy"),
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(2)), 18, 60, "Rainy")
         };
 
         var httpClient = CreateHttpClientWithResponse(forecasts);
@@ -85,7 +85,7 @@ public class WeatherApiClientTests
         // Arrange
         var forecasts = new[]
         {
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny")
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, 50, "Sunny")
         };
 
         var httpClient = CreateHttpClientWithResponse(forecasts);
@@ -111,6 +111,7 @@ public class WeatherApiClientTests
             .Select(i => new WeatherForecast(
                 DateOnly.FromDateTime(DateTime.Now.AddDays(i)),
                 20 + i,
+                50 + i,
                 $"Summary{i}"))
             .ToArray();
 
@@ -128,7 +129,7 @@ public class WeatherApiClientTests
     public void WeatherForecast_TemperatureF_CalculatesCorrectly()
     {
         // Arrange
-        var forecast = new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 0, "Test");
+        var forecast = new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 0, 50, "Test");
 
         // Act
         var temperatureF = forecast.TemperatureF;

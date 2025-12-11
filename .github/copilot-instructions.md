@@ -8,57 +8,90 @@ This repository contains a .NET Aspire solution targeting Azure Container Apps w
 - **Target Platform**: Azure Container Apps Environment with Dapr and KEDA
 - **Architecture**: Microservices with service discovery, distributed tracing, and centralized configuration
 
-## Architecture-First Development
+## Multi-Agent Development (VS Code 1.107+)
 
-Before making any code recommendations or changes, always:
+This repository is optimized for parallel agent development using VS Code's agent, subagent, and MCP capabilities introduced in VS Code 1.107 (November 2025).
 
-1. Read the relevant `ARCHITECTURE.md` file for context on purpose, intent, and existing patterns
-2. Check solution root `ARCHITECTURE.md` for high-level topology, service discovery, and deployment patterns
-3. Check project-specific `ARCHITECTURE.md` when modifying code in that project
-4. Review the "Good vs Bad Implementations" section in the relevant `ARCHITECTURE.md` to see real-world examples
-5. Ground recommendations in documented architecture decisions (service discovery, health checks, versioning, secrets management)
-6. Reference existing endpoints and patterns from architecture docs before suggesting new ones
-7. Respect documented configurations (OpenTelemetry, resilience, caching strategies)
-8. Match documented patterns shown in good examples, avoiding documented anti-patterns
+### VS Code 1.107 Features Enabled
 
-### Architecture Documentation Map
+This workspace is configured to use these new capabilities:
 
-- `/ARCHITECTURE.md` - Solution-wide: topology, deployment, CI/CD, observability, troubleshooting
-- `/aspire1.AppHost/ARCHITECTURE.md` - Service orchestration, service discovery, AppHost configuration
-- `/aspire1.ApiService/ARCHITECTURE.md` - API endpoints, OpenTelemetry, health checks, deployment
-- `/aspire1.Web/ARCHITECTURE.md` - Blazor Server, SignalR, HTTP clients, WeatherApiClient patterns
-- `/aspire1.ServiceDefaults/ARCHITECTURE.md` - OpenTelemetry, health checks, resilience, service discovery
+| Feature                                  | Setting                                        | Description                                                           |
+| ---------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------- |
+| **Custom Agents as Subagents**           | `chat.customAgentInSubagent.enabled`           | Use custom agents (web, api, weather, infra) as specialized subagents |
+| **Background Agents with Git Worktrees** | Built-in                                       | Run background agents in isolated Git worktrees to avoid conflicts    |
+| **GitHub MCP Server**                    | `github.copilot.chat.githubMcpServer.enabled`  | Seamless GitHub integration without extra setup                       |
+| **Claude Skills**                        | `chat.useClaudeSkills`                         | Reuse skills from `.claude/skills/` directory                         |
+| **Custom Agents in Background**          | `github.copilot.chat.cli.customAgents.enabled` | Use custom agents with background agents                              |
 
-Each `ARCHITECTURE.md` includes a "Best Practices vs Anti-Patterns" section with real examples from this codebase.
+### Custom Agents (`.github/agents/`)
 
-## Multi-Agent Development (VSCode 1.107+)
+Six specialized agents are available for use as subagents or directly:
 
-This repository is optimized for parallel agent development using VSCode's new agent and MCP capabilities.
+| Agent File         | Purpose                     | Scope                                      |
+| ------------------ | --------------------------- | ------------------------------------------ |
+| `web.agent.md`     | Blazor frontend development | `aspire1.Web/`, UI components              |
+| `api.agent.md`     | REST API development        | `aspire1.ApiService/`, endpoints           |
+| `weather.agent.md` | Backend data service        | `aspire1.WeatherService/`, data generation |
+| `infra.agent.md`   | Azure infrastructure        | `infra/`, Bicep, `azure.yaml`              |
+| `docs.agent.md`    | Documentation generation    | ARCHITECTURE.md, diagrams                  |
+| `commit.agent.md`  | Git workflow automation     | Conventional commits, PRs                  |
+
+**Using Custom Agents:**
+
+- Ask in chat: "What subagents can you use?" to see available agents
+- Directly invoke: Use agent-scoped prompts for specialized work
+- Background agents: Continue local work to background with "Continue in" option
+
+### Claude Skills (`.claude/skills/`)
+
+Three skills are available for on-demand loading:
+
+| Skill                | Purpose                                      |
+| -------------------- | -------------------------------------------- |
+| `aspire-service`     | Service patterns, endpoint creation, testing |
+| `azure-deploy`       | Deployment patterns, azd, Key Vault, CI/CD   |
+| `agent-coordination` | Multi-agent coordination rules and protocols |
 
 ### Agent Coordination Framework
 
 - **Agents Configuration**: `.vscode/agents.json` - Defines 4 autonomous agents (web, api, weather, infra)
-- **Service Boundaries**: `.agent-context.json` in each service - Defines scope, dependencies, and mutation rules
-- **MCP Servers**: `.mcp/` directory - Provides context discovery for agents
-- **Coordination Checkpoints**: `.agent-checkpoints/` - Integration points, dependency map, breaking changes log
+- **Custom Agent Definitions**: `.github/agents/*.agent.md` - Subagent-compatible agent definitions
+- **Service Boundaries**: Repo root `.agent-context.json` + per-service `.agent-context.json` files define scope, dependencies, and mutation rules
+- **MCP Servers**: `.mcp-server/` directory - Provides context discovery for agents
+- **Coordination Checkpoints (Guidance)**: `.agent-checkpoints/` contains guidance (integration points, dependency map, breaking changes log). If it conflicts with `.agent-context.json`, follow `.agent-context.json`.
+
+### Agent Context Policy (Source of Truth)
+
+- **Read before editing**: Before changing any service, read the relevant per-service `.agent-context.json` (and the repo root `.agent-context.json`) and follow its mutation rules.
+- **Precedence**: per-service `.agent-context.json` → repo root `.agent-context.json` → current code/contracts → `.agent-checkpoints/*` (guidance).
+- **Conflict handling**: If guidance conflicts with `.agent-context.json`, do not proceed until the conflict is resolved by updating the relevant context/checkpoint docs.
+
+### Mutation Model
+
+- **Non-CRITICAL services (default allow)**: For Web/API/Weather/Infra, paths are allowed unless explicitly listed as forbidden in the relevant `.agent-context.json`.
+- **CRITICAL shared components (strict)**: For `aspire1.ServiceDefaults` and coordination-only components like `aspire1.AppHost`, only make changes that are explicitly permitted and coordinated as documented.
+- **Option B - WeatherApiClient**: Changes to `aspire1.Web/WeatherApiClient.cs` are allowed, but require web-agent + api-agent coordination for any contract/DTO change or `/weatherforecast` behavior change.
 
 ### Available Agents
 
-| Agent | Service | Scope | Key Responsibility |
-|-------|---------|-------|-------------------|
-| **web-agent** | aspire1.Web | Blazor UI, components | Frontend development, WeatherApiClient integration |
-| **api-agent** | aspire1.ApiService | API endpoints, handlers | REST API, backend logic |
-| **weather-agent** | aspire1.WeatherService | Weather microservice | Data generation, weather endpoints |
-| **infra-agent** | infra/ | Bicep, Azure resources | Infrastructure, deployment configuration |
+| Agent             | Service                | Scope                   | Key Responsibility                                 |
+| ----------------- | ---------------------- | ----------------------- | -------------------------------------------------- |
+| **web-agent**     | aspire1.Web            | Blazor UI, components   | Frontend development, WeatherApiClient integration |
+| **api-agent**     | aspire1.ApiService     | API endpoints, handlers | REST API, backend logic                            |
+| **weather-agent** | aspire1.WeatherService | Weather microservice    | Data generation, weather endpoints                 |
+| **infra-agent**   | infra/                 | Bicep, Azure resources  | Infrastructure, deployment configuration           |
 
 ### Running Multiple Agents in Parallel
 
 1. **Safe Parallel Operations**:
+
    - web-agent modifying Components/ while weather-agent modifies Services/
    - api-agent adding endpoints while weather-agent changing data models
    - Both can build simultaneously: `./scripts/build/build-all-parallel.sh`
 
 2. **Coordinated Operations** (requires agent communication):
+
    - Changing aspire1.ServiceDefaults (affects ALL services)
    - Modifying service-to-service integration points
    - Updating health check formats or DTO contracts
@@ -71,6 +104,7 @@ This repository is optimized for parallel agent development using VSCode's new a
 ### MCP Server Context
 
 Agents can query the `.mcp-server/` for:
+
 - Service architecture details
 - Dependency relationships
 - Constraint validation
@@ -83,11 +117,13 @@ Example agent query: "Get dependencies for ApiService" → MCP returns list of d
 **ALWAYS enforce these when using multiple agents**:
 
 1. **ServiceDefaults Changes** = ALL agents must coordinate
+
    - This shared library is used by all 3 services
    - Breaking changes require 2-week deprecation notice
    - All service tests must pass before deploying
 
 2. **Integration Point Changes** = Dependent agents coordinate
+
    - Web → API: web-agent and api-agent coordinate
    - API → Weather: api-agent and weather-agent coordinate
 
@@ -384,11 +420,9 @@ public class WeatherApiClient(HttpClient httpClient)
 
 When providing code recommendations:
 
-- Always reference the specific ARCHITECTURE.md file that contains relevant patterns
 - Show both the anti-pattern to avoid and the correct implementation
 - Include complete code examples, not just snippets
 - Verify suggestions against documented patterns
-- When suggesting new endpoints or services, follow existing naming conventions documented in ARCHITECTURE.md files
 - If a WeatherApiClient-style typed client already exists, use that pattern for new HTTP clients
 - Provide clear explanations of the reasoning behind recommendations
 - Highlight potential pitfalls or common mistakes to avoid

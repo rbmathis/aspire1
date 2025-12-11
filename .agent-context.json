@@ -1,10 +1,23 @@
 {
   "projectName": "aspire1",
   "description": "Multi-agent coordination context for .NET Aspire microservices solution",
+  "mutationPolicy": {
+    "precedence": [
+      "per-service .agent-context.json",
+      "repo root .agent-context.json",
+      ".agent-checkpoints/* (guidance)",
+      "narrative documentation"
+    ],
+    "nonCriticalDefault": "allow",
+    "nonCriticalModel": "denylist (forbiddenMutations)",
+    "criticalModel": "explicit allowlist + coordination",
+    "note": "Default-allow applies only to non-CRITICAL services. CRITICAL shared components (e.g., ServiceDefaults) and coordination-only components (e.g., AppHost) must be explicitly allowed and coordinated."
+  },
   "serviceDefaults": {
     "path": "aspire1.ServiceDefaults/",
     "shared": true,
     "readOnly": false,
+    "mutationLevel": "CRITICAL",
     "mutationRules": [
       "Extensions.cs - Health check and OpenTelemetry setup",
       "ApplicationMetrics.cs - Application metrics definitions",
@@ -17,6 +30,7 @@
       "path": "aspire1.Web/",
       "agent": "web-agent",
       "technology": "Blazor Server",
+      "mutationLevel": "NORMAL",
       "mutationAllowed": true,
       "allowedMutations": [
         "Components/**",
@@ -25,9 +39,7 @@
         "appsettings.json",
         "appsettings.Development.json"
       ],
-      "forbiddenMutations": [
-        "WeatherApiClient.cs - Managed by shared patterns"
-      ],
+      "forbiddenMutations": [],
       "dependencies": [
         "aspire1.ServiceDefaults/",
         "aspire1.ApiService/ (via WeatherApiClient)"
@@ -38,6 +50,7 @@
       "path": "aspire1.ApiService/",
       "agent": "api-agent",
       "technology": "Minimal API / ASP.NET Core",
+      "mutationLevel": "NORMAL",
       "mutationAllowed": true,
       "allowedMutations": [
         "Program.cs",
@@ -57,6 +70,7 @@
       "path": "aspire1.WeatherService/",
       "agent": "weather-agent",
       "technology": "Minimal API / ASP.NET Core",
+      "mutationLevel": "NORMAL",
       "mutationAllowed": true,
       "allowedMutations": [
         "Program.cs",
@@ -76,6 +90,7 @@
     "path": "infra/",
     "agent": "infra-agent",
     "technology": "Bicep / Azure Deployment",
+    "mutationLevel": "NORMAL",
     "mutationAllowed": true,
     "allowedMutations": [
       "*.bicep",
@@ -91,6 +106,7 @@
     "path": "aspire1.AppHost/",
     "agent": "none - Coordination only",
     "technology": ".NET Aspire AppHost",
+    "mutationLevel": "CRITICAL",
     "mutationAllowed": false,
     "note": "Should only be modified after service changes are validated. Changes here coordinate all services.",
     "dependencies": [

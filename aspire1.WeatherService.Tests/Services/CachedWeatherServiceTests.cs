@@ -25,8 +25,8 @@ public class CachedWeatherServiceTests
         // Arrange
         var expectedForecasts = new[]
         {
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny"),
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 25, "Hot")
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, 50, "Sunny"),
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 25, 45, "Hot")
         };
         var cachedJson = JsonSerializer.Serialize(expectedForecasts);
         var cachedBytes = Encoding.UTF8.GetBytes(cachedJson);

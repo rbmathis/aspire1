@@ -159,8 +159,52 @@ resource apiLatencyAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-prev
   }
 }
 
+// Alert: Slow API Response Time > 2 seconds
+resource slowApiResponseAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = {
+  name: '${appName}-slow-api-response-${environment}'
+  location: location
+  tags: tags
+  properties: {
+    description: 'Alert when API response time exceeds 2 seconds'
+    severity: 2 // Warning
+    enabled: true
+    scopes: [
+      appInsightsId
+    ]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT5M'
+    criteria: {
+      allOf: [
+        {
+          query: '''
+            requests
+            | where duration > 2000
+            | where success == true
+            | summarize SlowRequests = count(), AvgDuration = avg(duration) by bin(timestamp, 5m), name
+            | where SlowRequests > 3
+          '''
+          timeAggregation: 'Count'
+          operator: 'GreaterThan'
+          threshold: 0
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
+        }
+      ]
+    }
+    autoMitigate: true
+    actions: {
+      actionGroups: [
+        actionGroup.id
+      ]
+    }
+  }
+}
+
 // Outputs
 output actionGroupId string = actionGroup.id
 output cacheMissAlertId string = cacheMissAlert.id
 output apiErrorAlertId string = apiErrorAlert.id
 output apiLatencyAlertId string = apiLatencyAlert.id
+output slowApiResponseAlertId string = slowApiResponseAlert.id

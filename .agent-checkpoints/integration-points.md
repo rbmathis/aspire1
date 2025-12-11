@@ -2,6 +2,8 @@
 
 This document outlines all integration points between services and how agents should coordinate changes.
 
+Note: This file is guidance. Mutation rules live in `.agent-context.json` (repo root + per-service).
+
 ## Current Integration Points
 
 ### 1. Web → API Service
@@ -15,7 +17,7 @@ public async Task<WeatherForecast[]> GetWeatherAsync(CancellationToken cancellat
 ```
 
 **Coordination**:
-- web-agent cannot change `WeatherApiClient` without api-agent coordination
+- Under Option B, web-agent may change `WeatherApiClient`; coordinate with api-agent for any contract/DTO change or `/weatherforecast` behavior change
 - api-agent must maintain backward compatibility with `/weatherforecast` endpoint
 - Changes to DTO require updates in both projects
 

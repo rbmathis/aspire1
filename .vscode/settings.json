@@ -47,16 +47,47 @@
   "git.confirmSync": false,
   "git.enableSmartCommit": true,
 
-  // Agent and MCP configuration for parallel development
+  // C# formatting
   "[csharp]": {
     "editor.defaultFormatter": "ms-dotnettools.csharp",
     "editor.formatOnSave": true
   },
   "csharp.format.enable": true,
   "csharp.inlayHints.enableInlayHints": true,
-  "agent.maxParallelAgents": 4,
-  "agent.contextSize": "large",
-  "agent.agentsFile": ".vscode/agents.json",
+
+  // =============================================================================
+  // VS Code 1.107+ Agent & Copilot Configuration
+  // =============================================================================
+
+  // GitHub Copilot Chat settings
+  "github.copilot.chat.agent.thinkingStyle": "auto",
+  "github.copilot.chat.agent.thinking.collapsedTools": true,
+
+  // Enable GitHub MCP Server (Preview) - seamless GitHub integration
+  "github.copilot.chat.githubMcpServer.enabled": true,
+  "github.copilot.chat.githubMcpServer.readonly": false,
+
+  // Enable custom agents in background agents (Experimental)
+  "github.copilot.chat.cli.customAgents.enabled": true,
+
+  // Enable custom agents as subagents (Experimental)
+  "chat.customAgentInSubagent.enabled": true,
+
+  // Enable Claude skills reuse (Experimental)
+  "chat.useClaudeSkills": true,
+
+  // Chat view appearance
+  "chat.viewSessions.enabled": true,
+  "chat.viewSessions.orientation": "auto",
+  "chat.viewTitle.enabled": true,
+  "chat.viewRestorePreviousSession": true,
+
+  // Inline chat optimized for code edits
+  "inlineChat.enableV2": true,
+
+  // =============================================================================
+  // MCP Server Configuration
+  // =============================================================================
   "mcp.servers": {
     "aspire-context": {
       "command": "node",
@@ -66,5 +97,12 @@
         "PROJECT_ROOT": "${workspaceFolder}"
       }
     }
-  }
+  },
+
+  // =============================================================================
+  // Legacy Agent Configuration (for compatibility)
+  // =============================================================================
+  "agent.maxParallelAgents": 4,
+  "agent.contextSize": "large",
+  "agent.agentsFile": ".vscode/agents.json"
 }
