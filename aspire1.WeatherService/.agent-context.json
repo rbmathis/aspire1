@@ -3,7 +3,7 @@
   "agent": "weather-agent",
   "purpose": "Microservice responsible for weather data generation and caching",
   "technology": "Minimal API, ASP.NET Core",
-  "archDocument": "ARCHITECTURE.md",
+  "archDocument": "../aspire1.WeatherService/ARCHITECTURE.md",
   "readOnlyDependencies": [
     "../aspire1.ServiceDefaults/",
     "../ARCHITECTURE.md"
