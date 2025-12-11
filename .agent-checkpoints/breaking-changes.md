@@ -28,7 +28,6 @@ When a breaking change is needed:
 **Proposed Implementation Date**: YYYY-MM-DD
 **Agents Affected**: 
 - web-agent (if aspire1.Web changes)
-- api-agent (if aspire1.ApiService changes)
 - weather-agent (if aspire1.WeatherService changes)
 - infra-agent (if deployment config changes)
 
@@ -39,7 +38,6 @@ When a breaking change is needed:
 
 **Impact Analysis**:
 - Web service: [impact]
-- API service: [impact]
 - Weather service: [impact]
 - Shared defaults: [impact]
 
@@ -66,7 +64,7 @@ If you needed to change the health check response format:
 **Proposed Implementation Date**: 2024-12-25
 
 **Agents Affected**:
-- All agents (web-agent, api-agent, weather-agent)
+- All agents (web-agent, weather-agent)
 - infra-agent (alert rules reference health format)
 
 **Breaking Change Details**:
@@ -88,7 +86,6 @@ If you needed to change the health check response format:
 
 **Impact Analysis**:
 - Web service: Tests must update health check assertions
-- API service: Tests must update health check assertions  
 - Weather service: Tests must update health check assertions
 - Shared defaults: Extensions.cs must emit new format
 
@@ -119,10 +116,9 @@ Before implementing a breaking change:
 ## Deployment Order for Breaking Changes
 
 1. **aspire1.ServiceDefaults** (if affected) - All other services depend on this
-2. **aspire1.WeatherService** (if affected) - No other services depend on it
-3. **aspire1.ApiService** (if affected) - Only Web depends on it
-4. **aspire1.Web** (if affected) - Depends on API
-5. **aspire1.AppHost** (rarely) - Last resort
+2. **aspire1.WeatherService** (if affected) - Web depends on it
+3. **aspire1.Web** (if affected) - Depends on WeatherService
+4. **aspire1.AppHost** (rarely) - Last resort
 
 ## Recent Changes
 
