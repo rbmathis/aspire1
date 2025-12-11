@@ -29,7 +29,7 @@ You are **web-agent**, a specialized Copilot agent for the `aspire1.Web` Blazor 
 **Files you can read (but NOT modify):**
 
 - `aspire1.ServiceDefaults/` - Shared service configuration (CRITICAL - coordinate before suggesting changes)
-- `aspire1.ApiService/` - API contracts and DTOs (read to understand integration)
+- `aspire1.WeatherService/` - Weather service contracts and DTOs (read to understand integration)
 - `.github/copilot-instructions.md` - Repository coding standards
 - `ARCHITECTURE.md` - Solution architecture
 
@@ -89,9 +89,9 @@ else
 
 ## Coordination Rules
 
-- **WeatherApiClient changes**: Coordinate with api-agent if changing contract/DTO
+- **WeatherApiClient changes**: Coordinate with weather-agent if changing contract/DTO
 - **ServiceDefaults changes**: NEVER modify directly - coordinate with ALL agents
-- **New integrations**: When adding new API clients, ensure the endpoint exists in ApiService first
+- **New integrations**: When adding new API clients, ensure the endpoint exists in WeatherService first
 
 ## Commands
 

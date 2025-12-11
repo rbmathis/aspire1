@@ -6,43 +6,26 @@ Note: This file is guidance. Mutation rules live in `.agent-context.json` (repo 
 
 ## Current Integration Points
 
-### 1. Web → API Service
+### 1. Web → Weather Service (Direct)
 **Location**: `aspire1.Web/WeatherApiClient.cs`
 
 ```csharp
 // Contract
 public async Task<WeatherForecast[]> GetWeatherAsync(CancellationToken cancellationToken = default)
 
-// Endpoint: aspire1.ApiService GET /weatherforecast
+// Endpoint: aspire1.WeatherService GET /weatherforecast
 ```
 
 **Coordination**:
-- Under Option B, web-agent may change `WeatherApiClient`; coordinate with api-agent for any contract/DTO change or `/weatherforecast` behavior change
-- api-agent must maintain backward compatibility with `/weatherforecast` endpoint
+- Under Option B, web-agent may change `WeatherApiClient`; coordinate with weather-agent for any contract/DTO change or `/weatherforecast` behavior change
+- weather-agent must maintain backward compatibility with `/weatherforecast` endpoint
 - Changes to DTO require updates in both projects
 
 **Testing**:
 - Integration tests in `aspire1.Web.Tests/WeatherApiClientTests.cs`
 - Must pass before either agent can deploy
 
-### 2. API Service → Weather Service
-**Location**: `aspire1.ApiService/Program.cs` (HttpClient factory)
-
-```csharp
-// Calls WeatherService: GET /weatherforecast
-// Returns: WeatherForecast[] DTO
-```
-
-**Coordination**:
-- api-agent cannot change call pattern without weather-agent coordination
-- weather-agent must maintain `/weatherforecast` endpoint signature
-- Both use the same `WeatherForecast` DTO - changes require both agents
-
-**Testing**:
-- Integration tests in `aspire1.ApiService.Tests/`
-- Must verify resilience (retries, circuit breaker) against WeatherService
-
-### 3. Health Check Coordination (All Services)
+### 2. Health Check Coordination (All Services)
 **Location**: `aspire1.ServiceDefaults/Extensions.cs`
 
 ```csharp
@@ -56,7 +39,7 @@ public static IHealthChecksBuilder AddServiceDefaults(...)
 - All agents depend on this
 
 **Coordination**:
-- **MUST** coordinate ALL four agents before changing health check format
+- **MUST** coordinate both agents (web, weather) before changing health check format
 - Any service change must have corresponding health check update
 - Backward compatibility required for 30 days minimum
 
@@ -64,7 +47,7 @@ public static IHealthChecksBuilder AddServiceDefaults(...)
 - Health endpoints tested in each service's integration tests
 - AppHost must verify health checks during startup
 
-### 4. OpenTelemetry Configuration (All Services)
+### 3. OpenTelemetry Configuration (All Services)
 **Location**: `aspire1.ServiceDefaults/Extensions.cs`
 
 ```csharp
@@ -85,25 +68,26 @@ builder.ConfigureOpenTelemetry(...)
 
 ### WeatherForecast
 **Defined in**: Each service defines its own version
-**Used by**: Web → API → Weather
+**Used by**: Web → Weather
 
 ```csharp
-public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary);
+public record WeatherForecast(DateOnly Date, int TemperatureC, int Humidity, string? Summary);
 ```
 
 **Coordination**:
-- If changing structure, ALL agents must update together
-- Currently defined in 3 locations (duplication is OK for independent deployment)
+- If changing structure, BOTH agents (web, weather) must update together
+- Currently defined in 2 locations (duplication is OK for independent deployment)
 - Breaking changes require 2+ week deprecation notice
 
 ## Endpoint Contracts
 
 | Service | Endpoint | Method | Agent | Input | Output |
 |---------|----------|--------|-------|-------|--------|
-| ApiService | `/weatherforecast` | GET | api-agent | none | `WeatherForecast[]` |
 | WeatherService | `/weatherforecast` | GET | weather-agent | none | `WeatherForecast[]` |
 | All | `/health/detailed` | GET | All | none | JSON health status |
 | All | `/version` | GET | All | none | JSON with version |
+
+Note: aspire1.ApiService exists but is not currently used in AppHost orchestration.
 
 ## Adding New Integration Points
 
@@ -140,32 +124,21 @@ Example:
 └──────┬──────┘
        │ HTTP
        ▼
-┌───────────────────┐       WeatherApiClient        ┌──────────────┐
-│ aspire1.Web       │─────────────────────────────→│ aspire1.Api  │
-│ (Blazor Server)   │ GET /weatherforecast          │   Service    │
-│                   │←─────────────────────────────│              │
-│ WeatherForecast[] │                               └──────┬───────┘
-└───────────────────┘                                      │
-                                                           │ HttpClient
-                                                           ▼
-                                                    ┌──────────────────────┐
-                                                    │ aspire1.WeatherService│
-                                                    │ GET /weatherforecast  │
-                                                    │                       │
-                                                    │ → WeatherForecast[]   │
-                                                    └──────────────────────┘
+┌───────────────────┐       WeatherApiClient        ┌──────────────────────┐
+│ aspire1.Web       │─────────────────────────────→│ aspire1.WeatherService│
+│ (Blazor Server)   │ GET /weatherforecast          │                       │
+│                   │←─────────────────────────────│ → WeatherForecast[]   │
+│ WeatherForecast[] │                               └──────────────────────┘
+└───────────────────┘
+
+Note: aspire1.ApiService exists in codebase but is not included in current AppHost orchestration.
 ```
 
 ## Failure Handling
 
 ### If WeatherService is down
-- ApiService: Circuit breaker activates, returns 503 or cached response
 - Web: WeatherApiClient gets timeout, displays error to user
-- **Agent action**: weather-agent must fix WeatherService, no breaking changes to API contract
-
-### If API Service is down
-- Web: Cannot load weather data, displays error
-- **Agent action**: api-agent must restore service, maintain endpoint contract
+- **Agent action**: weather-agent must fix WeatherService, no breaking changes to endpoint contract
 
 ### If health checks fail
 - AppHost: Service marked unhealthy, may not receive traffic
