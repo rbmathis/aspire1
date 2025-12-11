@@ -1,0 +1,48 @@
+{
+  "serviceName": "aspire1.ApiService",
+  "agent": "api-agent",
+  "purpose": "Core API service providing weather data and business logic",
+  "technology": "Minimal API, ASP.NET Core",
+  "archDocument": "ARCHITECTURE.md",
+  "readOnlyDependencies": [
+    "../aspire1.ServiceDefaults/",
+    "../aspire1.WeatherService/ARCHITECTURE.md",
+    "../ARCHITECTURE.md"
+  ],
+  "allowedMutations": [
+    "Program.cs",
+    "*.cs (endpoints, handlers, models)",
+    "appsettings.json",
+    "appsettings.Development.json"
+  ],
+  "forbiddenMutations": [
+    "Health check implementation - Use ServiceDefaults patterns"
+  ],
+  "integrationPoints": [
+    "Serves requests from aspire1.Web WeatherApiClient",
+    "Calls aspire1.WeatherService for weather data",
+    "Uses aspire1.ServiceDefaults for health checks and tracing"
+  ],
+  "buildCommands": {
+    "build": "dotnet build aspire1.ApiService.csproj",
+    "test": "cd ../aspire1.ApiService.Tests && dotnet test",
+    "format": "dotnet format",
+    "watch": "dotnet watch run"
+  },
+  "testScope": [
+    "../aspire1.ApiService.Tests/"
+  ],
+  "constraints": {
+    "noHardcodedUrls": true,
+    "useServiceDiscovery": true,
+    "requireHealthChecks": true,
+    "followOpenTelemetryPatterns": true,
+    "requireResilientHttpClients": true
+  },
+  "dependencies": {
+    "aspire1.WeatherService": {
+      "method": "HttpClient with resilience from ServiceDefaults",
+      "failureMode": "Graceful degradation with cache or stale data"
+    }
+  }
+}

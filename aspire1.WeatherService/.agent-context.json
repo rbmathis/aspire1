@@ -1,0 +1,48 @@
+{
+  "serviceName": "aspire1.WeatherService",
+  "agent": "weather-agent",
+  "purpose": "Microservice responsible for weather data generation and caching",
+  "technology": "Minimal API, ASP.NET Core",
+  "archDocument": "ARCHITECTURE.md",
+  "readOnlyDependencies": [
+    "../aspire1.ServiceDefaults/",
+    "../ARCHITECTURE.md"
+  ],
+  "allowedMutations": [
+    "Services/",
+    "Program.cs",
+    "*.cs (handlers, models, utilities)",
+    "appsettings.json",
+    "appsettings.Development.json"
+  ],
+  "forbiddenMutations": [
+    "Health check implementation - Use ServiceDefaults patterns"
+  ],
+  "integrationPoints": [
+    "Serves /weatherforecast endpoint consumed by aspire1.ApiService",
+    "Uses aspire1.ServiceDefaults for health checks and tracing",
+    "May integrate with external weather APIs (optional - currently generating synthetic data)"
+  ],
+  "buildCommands": {
+    "build": "dotnet build aspire1.WeatherService.csproj",
+    "test": "cd ../aspire1.WeatherService.Tests && dotnet test",
+    "format": "dotnet format",
+    "watch": "dotnet watch run"
+  },
+  "testScope": [
+    "../aspire1.WeatherService.Tests/"
+  ],
+  "constraints": {
+    "noHardcodedUrls": true,
+    "useServiceDiscovery": true,
+    "requireHealthChecks": true,
+    "followOpenTelemetryPatterns": true,
+    "noDependencyOnApiService": true,
+    "noDependencyOnWebService": true
+  },
+  "notes": {
+    "ownershipModel": "Independently deployable microservice",
+    "scalability": "Can be scaled independently of API service",
+    "caching": "Consider Redis for forecast caching (shared with other services)"
+  }
+}

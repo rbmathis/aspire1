@@ -1,0 +1,40 @@
+{
+  "serviceName": "aspire1.ServiceDefaults",
+  "agent": "shared - All agents should coordinate",
+  "purpose": "Shared library providing OpenTelemetry, health checks, resilience, and service discovery patterns",
+  "technology": "Shared .NET library, OpenTelemetry, System.Diagnostics",
+  "archDocument": "ARCHITECTURE.md",
+  "shared": true,
+  "mutationLevel": "CRITICAL - All services depend on this",
+  "allowedMutations": [
+    "Extensions.cs - Health check and OpenTelemetry configuration",
+    "ApplicationMetrics.cs - Metric definitions",
+    "aspire1.ServiceDefaults.csproj - Dependency versions ONLY (coordinate with all agents)"
+  ],
+  "forbiddenMutations": [
+    "Removing or renaming public APIs without coordinating with all services"
+  ],
+  "usedBy": [
+    "aspire1.Web",
+    "aspire1.ApiService",
+    "aspire1.WeatherService"
+  ],
+  "criticalFunctions": [
+    "AddServiceDefaults() - Health checks registration",
+    "ApplicationMetrics - Telemetry emission",
+    "Resilience policies - HttpClient retry and circuit breaker"
+  ],
+  "coordinationRules": {
+    "beforeBreakingChanges": "Notify all agent coordinators",
+    "testImpact": "Changes here require ALL service tests to pass",
+    "deploymentOrder": "Deploy ServiceDefaults before any dependent service"
+  },
+  "buildCommands": {
+    "build": "dotnet build aspire1.ServiceDefaults.csproj"
+  },
+  "constraints": {
+    "noServiceDependencies": true,
+    "mustBeOfflineCapable": true,
+    "mustSupportAllThreeServices": true
+  }
+}
