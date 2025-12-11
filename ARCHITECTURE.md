@@ -55,23 +55,23 @@ graph TB
 
 ## 📊 Component Matrix
 
-| Component                    | Type          | Port(s)          | Dependencies            | Health Endpoint               | Container Image                |
-| ---------------------------- | ------------- | ---------------- | ----------------------- | ----------------------------- | ------------------------------ |
-| **aspire1.Web**              | Blazor Server | 8080, 8443       | aspire1.ApiService      | `/health`                     | `aspire1-web:{version}`        |
-| **aspire1.ApiService**       | Minimal API   | 8080, 8443       | aspire1.ServiceDefaults | `/health`, `/health/detailed` | `aspire1-apiservice:{version}` |
-| **aspire1.ServiceDefaults**  | Class Library | N/A              | -                       | N/A                           | N/A                            |
-| **aspire1.AppHost**          | Orchestrator  | 5000 (dashboard) | All projects            | N/A                           | N/A                            |
-| **aspire1.Web.Tests**        | Test Project  | N/A              | aspire1.Web             | N/A                           | N/A                            |
-| **aspire1.ApiService.Tests** | Test Project  | N/A              | aspire1.ApiService      | N/A                           | N/A                            |
+| Component                   | Type          | Port(s)          | Dependencies            | Health Endpoint               | Container Image                |
+| --------------------------- | ------------- | ---------------- | ----------------------- | ----------------------------- | ------------------------------ |
+| **aspire1.Web**             | Blazor Server | 8080, 8443       | aspire1.WeatherService  | `/health`                     | `aspire1-web:{version}`        |
+| **aspire1.WeatherService**  | Minimal API   | 8080, 8443       | aspire1.ServiceDefaults | `/health`, `/health/detailed` | `aspire1-weatherservice:{version}` |
+| **aspire1.ServiceDefaults** | Class Library | N/A              | -                       | N/A                           | N/A                            |
+| **aspire1.AppHost**         | Orchestrator  | 5000 (dashboard) | All projects            | N/A                           | N/A                            |
+| **aspire1.Web.Tests**       | Test Project  | N/A              | aspire1.Web             | N/A                           | N/A                            |
+| **aspire1.WeatherService.Tests** | Test Project  | N/A         | aspire1.WeatherService  | N/A                           | N/A                            |
 
 ### Additional Endpoints
 
-| Service            | Endpoint               | Purpose                                        |
-| ------------------ | ---------------------- | ---------------------------------------------- |
-| aspire1.ApiService | `GET /`                | Service status message                         |
-| aspire1.ApiService | `GET /weatherforecast` | Sample weather data API                        |
-| aspire1.ApiService | `GET /version`         | Version + commit SHA for deployment tracking   |
-| aspire1.ApiService | `GET /health/detailed` | Enhanced health with version for OpenTelemetry |
+| Service                 | Endpoint               | Purpose                                        |
+| ----------------------- | ---------------------- | ---------------------------------------------- |
+| aspire1.WeatherService  | `GET /`                | Service status message                         |
+| aspire1.WeatherService  | `GET /weatherforecast` | Weather forecast data stream                   |
+| aspire1.WeatherService  | `GET /version`         | Version + commit SHA for deployment tracking   |
+| aspire1.WeatherService  | `GET /health/detailed` | Enhanced health with version for OpenTelemetry |
 
 ## 📊 Custom Telemetry & Observability
 
@@ -130,25 +130,27 @@ aspire1/
 │   ├── appsettings.json          # Environment-agnostic config
 │   └── ARCHITECTURE.md           # AppHost-specific architecture
 │
-├── aspire1.ApiService/           # Backend REST API
-│   ├── Program.cs                # API endpoints & middleware
-│   ├── appsettings.json          # Default configuration
-│   └── ARCHITECTURE.md           # API service architecture
-│
 ├── aspire1.Web/                  # Blazor Server frontend
 │   ├── Program.cs                # Web app configuration
 │   ├── Components/               # Blazor components
 │   │   ├── Pages/                # Routable pages
 │   │   └── Layout/               # Layout components
+│   ├── WeatherApiClient.cs       # HTTP client for WeatherService
 │   └── ARCHITECTURE.md           # Web service architecture
+│
+├── aspire1.WeatherService/       # Weather data microservice
+│   ├── Program.cs                # API endpoints & middleware
+│   ├── Services/                 # Weather data generation
+│   ├── appsettings.json          # Default configuration
+│   └── ARCHITECTURE.md           # Weather service architecture
 │
 ├── aspire1.ServiceDefaults/      # Shared Aspire defaults
 │   ├── Extensions.cs             # OpenTelemetry, health, resilience
 │   └── ARCHITECTURE.md           # Service defaults architecture
 │
-├── aspire1.ApiService.Tests/     # API service unit tests
+├── aspire1.WeatherService.Tests/ # Weather service unit tests
 │   └── Services/
-│       └── CachedWeatherServiceTests.cs  # Cache service tests
+│       └── WeatherServiceTests.cs  # Data generation tests
 │
 ├── aspire1.Web.Tests/            # Web frontend unit tests
 │   └── WeatherApiClientTests.cs  # HTTP client tests
@@ -171,11 +173,11 @@ sequenceDiagram
     participant User
     participant Web as aspire1.Web<br/>(Blazor Server)
     participant ServiceDiscovery as Service Discovery
-    participant API as aspire1.ApiService<br/>(REST API)
+    participant Weather as aspire1.WeatherService<br/>(Microservice)
 
     User->>Web: GET /weather
-    Web->>ServiceDiscovery: Resolve "apiservice"
-    ServiceDiscovery-->>Web: https://apiservice:8443
+    Web->>ServiceDiscovery: Resolve "weatherservice"
+    ServiceDiscovery-->>Web: https://weatherservice:8443
     Web->>API: GET /weatherforecast
     API-->>Web: Weather data (JSON)
     Web-->>User: Rendered weather page
@@ -213,7 +215,7 @@ flowchart LR
 
 ```bash
 # Set local secrets
-dotnet user-secrets set "ConnectionStrings:MyDb" "..." --project aspire1.ApiService
+dotnet user-secrets set "ConnectionStrings:MyDb" "..." --project aspire1.WeatherService
 
 # Run locally
 dotnet run --project aspire1.AppHost
@@ -439,7 +441,7 @@ curl http://localhost:{port}/health
 curl http://localhost:{port}/version
 
 # Tail logs
-dotnet watch --project aspire1.ApiService
+dotnet watch --project aspire1.WeatherService
 ```
 
 ### Azure (Production)
@@ -550,10 +552,10 @@ The solution includes comprehensive unit tests following industry best practices
 
 **Test Projects:**
 
-| Project                  | Tests | Coverage | Description                            |
-| ------------------------ | ----- | -------- | -------------------------------------- |
-| aspire1.ApiService.Tests | 7     | >80%     | Cache service logic and error handling |
-| aspire1.Web.Tests        | 10    | >80%     | HTTP client behavior and edge cases    |
+| Project                       | Tests | Coverage | Description                            |
+| ----------------------------- | ----- | -------- | -------------------------------------- |
+| aspire1.WeatherService.Tests  | 5     | >80%     | Weather data generation and API logic  |
+| aspire1.Web.Tests             | 10    | >80%     | HTTP client behavior and edge cases    |
 
 **Test Naming Convention:**
 
@@ -569,7 +571,7 @@ Example: GetWeatherAsync_SuccessfulResponse_ReturnsForecasts
 dotnet test
 
 # Run specific project tests
-dotnet test aspire1.ApiService.Tests
+dotnet test aspire1.WeatherService.Tests
 dotnet test aspire1.Web.Tests
 
 # Run with coverage
@@ -578,19 +580,20 @@ dotnet test --collect:"XPlat Code Coverage"
 
 **Test Coverage Highlights:**
 
-- ✅ Cache hit/miss scenarios
-- ✅ Cache read/write failures with graceful degradation
+- ✅ Weather data generation accuracy
 - ✅ HTTP client success/error responses
 - ✅ Cancellation token handling
 - ✅ Edge cases (empty data, various counts)
 - ✅ Temperature conversion validation
+- ✅ Streaming data handling
 
 **Key Test Patterns:**
 
 ```csharp
-// ApiService: Mocking IDistributedCache
-_mockCache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-    .Returns(cachedData);
+// WeatherService: Testing data generation
+var forecasts = await _weatherService.GetForecastsAsync(5);
+forecasts.Should().HaveCount(5);
+forecasts.All(f => f.TemperatureC >= -20 && f.TemperatureC <= 55).Should().BeTrue();
 
 // Web: Mocking HttpMessageHandler
 var handler = new MockHttpMessageHandler(HttpStatusCode.OK, json);

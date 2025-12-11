@@ -7,14 +7,12 @@
   "mutationPolicy": {
     "defaultWhenSilent": "allow",
     "model": "denylist (forbiddenMutations)",
-    "optionB": {
-      "weatherApiClient": "WeatherApiClient.cs edits are allowed. Coordinate with api-agent for any contract/DTO change or changes that require updates to aspire1.ApiService /weatherforecast behavior."
-    }
+    "note": "WeatherApiClient.cs edits are allowed. Coordinate with weather-agent for any contract/DTO change or changes to /weatherforecast endpoint behavior."
   },
   "archDocument": "ARCHITECTURE.md",
   "readOnlyDependencies": [
     "../aspire1.ServiceDefaults/",
-    "../aspire1.ApiService/ARCHITECTURE.md",
+    "../aspire1.WeatherService/ (endpoint contracts)",
     "../ARCHITECTURE.md"
   ],
   "allowedMutations": [
@@ -27,8 +25,7 @@
   ],
   "forbiddenMutations": [],
   "integrationPoints": [
-    "WeatherApiClient -> aspire1.ApiService /weatherforecast endpoint",
-    "SignalR <- aspire1.ApiService for real-time updates",
+    "WeatherApiClient -> aspire1.WeatherService /weatherforecast endpoint (direct)",
     "Health checks via aspire1.ServiceDefaults patterns"
   ],
   "buildCommands": {

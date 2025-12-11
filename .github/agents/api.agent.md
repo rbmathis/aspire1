@@ -17,6 +17,16 @@ tools:
 
 # API Service Agent
 
+> ⚠️ **NOTE**: This agent definition is for a **future enhancement**. The `aspire1.ApiService` project does not currently exist in this solution.
+>
+> **Current Architecture**: `aspire1.Web` → `aspire1.WeatherService` (direct)
+>
+> **Future Architecture** (when implemented): `aspire1.Web` → `aspire1.ApiService` → `aspire1.WeatherService`
+>
+> This file is kept for reference when implementing an intermediate API layer in the future.
+
+---
+
 You are **api-agent**, a specialized Copilot agent for the `aspire1.ApiService` project in this .NET Aspire solution.
 
 ## Your Scope

@@ -2,10 +2,9 @@
 
 ## 📋 Overview
 
-Your project is configured for **VSCode 1.107+ Multi-Agent Development** with 4 parallel agents working across independent services:
+Your project is configured for **VSCode 1.107+ Multi-Agent Development** with 3 parallel agents working across independent services:
 
 - **web-agent** → `aspire1.Web/` (Blazor Server frontend)
-- **api-agent** → `aspire1.ApiService/` (REST API layer)
 - **weather-agent** → `aspire1.WeatherService/` (Microservice)
 - **infra-agent** → `infra/` (Azure infrastructure)
 
@@ -42,7 +41,7 @@ Your project is configured for **VSCode 1.107+ Multi-Agent Development** with 4 
 
 | File                                             | Purpose                                    |
 | ------------------------------------------------ | ------------------------------------------ |
-| [`.vscode/agents.json`](.vscode/agents.json)     | 4 agent definitions with scopes & commands |
+| [`.vscode/agents.json`](.vscode/agents.json)     | 3 agent definitions with scopes & commands |
 | [`.vscode/settings.json`](.vscode/settings.json) | VSCode settings + MCP server config        |
 | [`.agent-context.json`](.agent-context.json)     | Project-wide agent structure               |
 
@@ -51,7 +50,6 @@ Your project is configured for **VSCode 1.107+ Multi-Agent Development** with 4 
 | File                                                                                         | Purpose                     | Owner         |
 | -------------------------------------------------------------------------------------------- | --------------------------- | ------------- |
 | [`aspire1.Web/.agent-context.json`](aspire1.Web/.agent-context.json)                         | Web service constraints     | web-agent     |
-| [`aspire1.ApiService/.agent-context.json`](aspire1.ApiService/.agent-context.json)           | API service constraints     | api-agent     |
 | [`aspire1.WeatherService/.agent-context.json`](aspire1.WeatherService/.agent-context.json)   | Weather service constraints | weather-agent |
 | [`aspire1.ServiceDefaults/.agent-context.json`](aspire1.ServiceDefaults/.agent-context.json) | Shared library (ALL agents) | Team lead     |
 
@@ -131,7 +129,6 @@ Your project is configured for **VSCode 1.107+ Multi-Agent Development** with 4 
 ```bash
 dotnet test aspire1.sln --no-build                           # All tests
 dotnet test aspire1.Web.Tests --no-build                     # Web tests
-dotnet test aspire1.ApiService.Tests --no-build              # API tests
 dotnet test aspire1.WeatherService.Tests --no-build          # Weather tests
 dotnet test aspire1.sln --no-build /p:CollectCoverage=true   # With coverage
 ```
@@ -141,7 +138,6 @@ dotnet test aspire1.sln --no-build /p:CollectCoverage=true   # With coverage
 ```bash
 dotnet run --project aspire1.AppHost                         # Full stack via Aspire
 dotnet watch run --project aspire1.Web/aspire1.Web.csproj    # Web (watch)
-dotnet watch run --project aspire1.ApiService/               # API (watch)
 dotnet watch run --project aspire1.WeatherService/           # Weather (watch)
 ```
 
@@ -170,9 +166,8 @@ git status                             # Check what's changed
 | Change                             | Safe?    | Why                 | What to Do                   |
 | ---------------------------------- | -------- | ------------------- | ---------------------------- |
 | Add new component to Web           | ✅ Yes   | Isolated to Web     | Just implement               |
-| Add new API endpoint to ApiService | ✅ Yes   | New endpoint        | Just implement               |
-| Change existing API endpoint       | ❌ No    | Web depends on it   | Coordinate with web-agent    |
-| Modify Weather endpoint signature  | ❌ No    | API depends on it   | Coordinate with api-agent    |
+| Add new Weather endpoint           | ⚠️ Maybe | May affect Web      | Coordinate with web-agent if consumed |
+| Change existing Weather endpoint   | ❌ No    | Web depends on it   | Coordinate with web-agent    |
 | Change health check format         | ❌ No    | All services use it | Coordinate with ALL agents   |
 | Update ServiceDefaults             | ❌ No    | All services depend | Coordinate with ALL agents   |
 | Add dependency to external API     | ⚠️ Maybe | Check constraints   | Read `.agent-context.json`   |
@@ -186,18 +181,14 @@ git status                             # Check what's changed
 
 ```
 ┌──────────────┐
-│ aspire1.Web  │─ calls ──→ ApiService
+│ aspire1.Web  │─ calls ──→ WeatherService (direct)
 └──────────────┘
-
-┌─────────────────────┐
-│ aspire1.ApiService  │─ calls ──→ WeatherService
-└─────────────────────┘
 
 ┌───────────────────────┐
 │ aspire1.WeatherService│─ calls ──→ (nothing)
 └───────────────────────┘
 
-All 3 services:
+Both services:
     │
     └──→ aspire1.ServiceDefaults (shared)
 ```

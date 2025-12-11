@@ -36,33 +36,14 @@
         "Components/**",
         "wwwroot/**",
         "Program.cs",
+        "WeatherApiClient.cs",
         "appsettings.json",
         "appsettings.Development.json"
       ],
       "forbiddenMutations": [],
       "dependencies": [
         "aspire1.ServiceDefaults/",
-        "aspire1.ApiService/ (via WeatherApiClient)"
-      ]
-    },
-    {
-      "id": "api",
-      "path": "aspire1.ApiService/",
-      "agent": "api-agent",
-      "technology": "Minimal API / ASP.NET Core",
-      "mutationLevel": "NORMAL",
-      "mutationAllowed": true,
-      "allowedMutations": [
-        "Program.cs",
-        "*.cs (endpoints, handlers)",
-        "appsettings.json"
-      ],
-      "forbiddenMutations": [
-        "Health check endpoints - Coordinated via ServiceDefaults"
-      ],
-      "dependencies": [
-        "aspire1.ServiceDefaults/",
-        "aspire1.WeatherService/"
+        "aspire1.WeatherService/ (via WeatherApiClient)"
       ]
     },
     {

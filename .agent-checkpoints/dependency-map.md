@@ -7,13 +7,7 @@
 │   aspire1.Web       │
 │  (Blazor Server)    │
 └──────────┬──────────┘
-           │ WeatherApiClient
-           ▼
-┌─────────────────────┐
-│  aspire1.ApiService │
-│  (Minimal API)      │
-└──────────┬──────────┘
-           │ HttpClient
+           │ WeatherApiClient (HttpClient)
            ▼
 ┌──────────────────────────┐
 │aspire1.WeatherService    │
@@ -30,19 +24,12 @@ All services ▼
 ## Dependency Graph
 
 ### aspire1.Web → Dependencies
-- ✅ aspire1.ApiService (via WeatherApiClient)
+- ✅ aspire1.WeatherService (via WeatherApiClient HttpClient)
 - ✅ aspire1.ServiceDefaults (health checks, tracing)
-- ❌ aspire1.WeatherService (should never call directly)
-
-### aspire1.ApiService → Dependencies
-- ✅ aspire1.WeatherService (via HttpClient)
-- ✅ aspire1.ServiceDefaults (health checks, tracing, resilience)
-- ❌ aspire1.Web (should never call directly)
 
 ### aspire1.WeatherService → Dependencies
 - ✅ aspire1.ServiceDefaults (health checks, tracing)
-- ❌ aspire1.ApiService (should never call - creates cycle)
-- ❌ aspire1.Web (should never call)
+- ❌ aspire1.Web (should never call - creates cycle)
 
 ### aspire1.ServiceDefaults → Dependencies
 - ✅ None (standalone shared library)
@@ -52,48 +39,40 @@ All services ▼
 
 | Agent | Readonly Dependencies | Can Modify | Must Notify |
 |-------|----------------------|-----------|-------------|
-| web-agent | ApiService, ServiceDefaults, Defaults | Web components, endpoints | weather-agent if changing API expectations |
-| api-agent | WeatherService, ServiceDefaults, Defaults | API endpoints, handlers | weather-agent if changing weather endpoint contract |
-| weather-agent | ServiceDefaults, Defaults | Weather data, models, endpoints | api-agent if changing endpoint contract |
+| web-agent | WeatherService contracts, ServiceDefaults | Web components, WeatherApiClient | weather-agent if changing endpoint expectations |
+| weather-agent | ServiceDefaults | Weather data, models, endpoints | web-agent if changing endpoint contract |
 | infra-agent | All services (reference) | Bicep, Azure resources | All agents before deploying breaking changes |
 
 ## Integration Points
 
-### Web ↔ API
-- **Interface**: `WeatherApiClient` in Web calls `ApiService`
+### Web ↔ Weather
+- **Interface**: `WeatherApiClient` in Web calls `WeatherService` directly
 - **Contract**: `GET /weatherforecast`
-- **Payload**: `WeatherForecast[]` DTO
-- **Agents**: web-agent and api-agent coordinate changes
+- **Payload**: `WeatherForecast` DTO (with Date, TemperatureC, Humidity, Summary)
+- **Agents**: web-agent and weather-agent coordinate changes
 - **Testing**: Integration tests in aspire1.Web.Tests
-
-### API ↔ Weather
-- **Interface**: `HttpClient` in ApiService calls WeatherService
-- **Contract**: `GET /weatherforecast`
-- **Payload**: `WeatherForecast[]` DTO
-- **Agents**: api-agent and weather-agent coordinate changes
-- **Testing**: Integration tests in aspire1.ApiService.Tests
 
 ### All ↔ ServiceDefaults
 - **Interface**: AddServiceDefaults() extension
 - **Contract**: Health checks, OpenTelemetry, resilience policies
-- **Impact**: Changes here affect ALL three services
+- **Impact**: Changes here affect BOTH services (Web and Weather)
 - **Agents**: All agents coordinate before making changes
 - **Testing**: All service tests must pass
 
 ## Parallel Development Rules
 
 ### ✅ Safe Parallel Work
-- web-agent modifying Components/ while weather-agent modifies Services/
-- api-agent adding endpoints while weather-agent modifying weather data
-- infra-agent deploying resources while api-agent develops new endpoints
+- web-agent modifying Components/ (UI) while weather-agent modifies internal Services/ (data generation)
+- infra-agent deploying resources while weather-agent develops new endpoints (no contract changes)
+- Documentation updates by any agent
 
 ### ⚠️ Requires Coordination
-- Any change to aspire1.ServiceDefaults (breaks all if wrong)
-- Adding new service-to-service endpoints
+- Any change to aspire1.ServiceDefaults (affects both services)
+- Adding new WeatherService endpoints (web-agent needs to know)
 - Changing health check formats
-- Modifying DTO contracts between services
+- Modifying WeatherForecast DTO contract
 
 ### ❌ Never Do In Parallel
 - Multiple agents modifying the same file
-- Different agents changing the same interface
+- Different agents changing the WeatherForecast DTO
 - Concurrent changes to AppHost service discovery

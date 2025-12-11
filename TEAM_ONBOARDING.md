@@ -58,19 +58,10 @@ dotnet run --project aspire1.AppHost
 
 - **Scope**: `aspire1.Web/`
 - **Technology**: Blazor Server, SignalR, C#
-- **Can modify**: Components/, views, styles, client-side logic
-- **Depends on**: ApiService (read-only), ServiceDefaults (read-only)
+- **Can modify**: Components/, views, styles, client-side logic, WeatherApiClient
+- **Depends on**: WeatherService (read-only), ServiceDefaults (read-only)
 - **Build**: `./scripts/build/build-web.sh`
 - **Test**: `dotnet test aspire1.Web.Tests`
-
-### Backend API Developer? → api-agent
-
-- **Scope**: `aspire1.ApiService/`
-- **Technology**: Minimal API, ASP.NET Core, C#
-- **Can modify**: Endpoints, handlers, business logic
-- **Depends on**: WeatherService (read-only), ServiceDefaults (read-only)
-- **Build**: `./scripts/build/build-api.sh`
-- **Test**: `dotnet test aspire1.ApiService.Tests`
 
 ### Microservice Developer? → weather-agent
 
@@ -144,10 +135,10 @@ Example: web-agent adding a new component is safe.
 ### ✅ These ARE Safe to Do in Parallel
 
 ```
-web-agent     api-agent     weather-agent     infra-agent
-    │             │               │                 │
-    ├─ Build ────┼─ Build ────┼─ Build ────┼─ Deploy
-    │             │               │                 │
+web-agent     weather-agent     infra-agent
+    │               │                 │
+    ├─ Build ──┼─ Build ────┼─ Deploy
+    │               │                 │
     ├─ Test  ────┼─ Test  ────┼─ Test  ────┼─ (no test)
     │             │               │
     └─ Components API Endpoints   Services

@@ -29,7 +29,6 @@ dotnet test aspire1.sln
 
 # Run tests by service
 dotnet test aspire1.Web.Tests
-dotnet test aspire1.ApiService.Tests
 dotnet test aspire1.WeatherService.Tests
 
 # Run with coverage
@@ -38,12 +37,11 @@ dotnet test aspire1.sln /p:CollectCoverage=true
 
 ### VSCode Agents
 
-Open VSCode and you'll see 4 agents ready to work:
+Open VSCode and you'll see 3 agents ready to work:
 
 1. **web-agent** → `aspire1.Web/` (Blazor frontend)
-2. **api-agent** → `aspire1.ApiService/` (API layer)
-3. **weather-agent** → `aspire1.WeatherService/` (Microservice)
-4. **infra-agent** → `infra/` (Azure/Bicep)
+2. **weather-agent** → `aspire1.WeatherService/` (Microservice)
+3. **infra-agent** → `infra/` (Azure/Bicep)
 
 ## Coordination Reference
 

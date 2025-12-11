@@ -31,7 +31,6 @@ Six specialized agents are available for use as subagents or directly:
 | Agent File         | Purpose                     | Scope                                      |
 | ------------------ | --------------------------- | ------------------------------------------ |
 | `web.agent.md`     | Blazor frontend development | `aspire1.Web/`, UI components              |
-| `api.agent.md`     | REST API development        | `aspire1.ApiService/`, endpoints           |
 | `weather.agent.md` | Backend data service        | `aspire1.WeatherService/`, data generation |
 | `infra.agent.md`   | Azure infrastructure        | `infra/`, Bicep, `azure.yaml`              |
 | `docs.agent.md`    | Documentation generation    | ARCHITECTURE.md, diagrams                  |
@@ -69,16 +68,15 @@ Three skills are available for on-demand loading:
 
 ### Mutation Model
 
-- **Non-CRITICAL services (default allow)**: For Web/API/Weather/Infra, paths are allowed unless explicitly listed as forbidden in the relevant `.agent-context.json`.
+- **Non-CRITICAL services (default allow)**: For Web/Weather/Infra, paths are allowed unless explicitly listed as forbidden in the relevant `.agent-context.json`.
 - **CRITICAL shared components (strict)**: For `aspire1.ServiceDefaults` and coordination-only components like `aspire1.AppHost`, only make changes that are explicitly permitted and coordinated as documented.
-- **Option B - WeatherApiClient**: Changes to `aspire1.Web/WeatherApiClient.cs` are allowed, but require web-agent + api-agent coordination for any contract/DTO change or `/weatherforecast` behavior change.
+- **WeatherApiClient**: Changes to `aspire1.Web/WeatherApiClient.cs` are allowed, but require web-agent + weather-agent coordination for any contract/DTO change or `/weatherforecast` behavior change.
 
 ### Available Agents
 
 | Agent             | Service                | Scope                   | Key Responsibility                                 |
 | ----------------- | ---------------------- | ----------------------- | -------------------------------------------------- |
 | **web-agent**     | aspire1.Web            | Blazor UI, components   | Frontend development, WeatherApiClient integration |
-| **api-agent**     | aspire1.ApiService     | API endpoints, handlers | REST API, backend logic                            |
 | **weather-agent** | aspire1.WeatherService | Weather microservice    | Data generation, weather endpoints                 |
 | **infra-agent**   | infra/                 | Bicep, Azure resources  | Infrastructure, deployment configuration           |
 
@@ -87,12 +85,11 @@ Three skills are available for on-demand loading:
 1. **Safe Parallel Operations**:
 
    - web-agent modifying Components/ while weather-agent modifies Services/
-   - api-agent adding endpoints while weather-agent changing data models
    - Both can build simultaneously: `./scripts/build/build-all-parallel.sh`
 
 2. **Coordinated Operations** (requires agent communication):
 
-   - Changing aspire1.ServiceDefaults (affects ALL services)
+   - Changing aspire1.ServiceDefaults (affects BOTH services)
    - Modifying service-to-service integration points
    - Updating health check formats or DTO contracts
 
@@ -118,17 +115,16 @@ Example agent query: "Get dependencies for ApiService" → MCP returns list of d
 
 1. **ServiceDefaults Changes** = ALL agents must coordinate
 
-   - This shared library is used by all 3 services
+   - This shared library is used by both services
    - Breaking changes require 2-week deprecation notice
    - All service tests must pass before deploying
 
 2. **Integration Point Changes** = Dependent agents coordinate
 
-   - Web → API: web-agent and api-agent coordinate
-   - API → Weather: api-agent and weather-agent coordinate
+   - Web → Weather: web-agent and weather-agent coordinate on DTO/contract changes
 
 3. **Independent Changes** = Safe to parallelize
-   - Web components and Weather data models
+   - Web components and Weather data models (internal logic only)
    - Infrastructure while other agents develop
    - Health checks (if not changing format)
 
@@ -137,7 +133,6 @@ Example agent query: "Get dependencies for ApiService" → MCP returns list of d
 ```bash
 # Individual service builds (agent-specific)
 ./scripts/build/build-web.sh      # For web-agent
-./scripts/build/build-api.sh      # For api-agent
 ./scripts/build/build-weather.sh  # For weather-agent
 
 # Parallel build (all agents can run simultaneously)
@@ -154,7 +149,7 @@ When an agent needs to make a breaking change:
 4. Wait 2 weeks for deprecation
 5. Remove old behavior in next phase
 
-Example: If changing health check format, weather-agent documents change, api-agent and web-agent update tests, all validate, then deploy in sequence.
+Example: If changing health check format, weather-agent documents change, web-agent updates tests, both validate, then deploy in sequence.
 
 ## Code Patterns
 
@@ -162,7 +157,7 @@ Example: If changing health check format, weather-agent documents change, api-ag
 
 - Use `WithReference()` for service-to-service communication in AppHost
 - Avoid hard-coded URLs; leverage Aspire''s service discovery mechanisms
-- Example: `builder.AddProject<Projects.aspire1_Web>("webfrontend").WithReference(apiService)`
+- Example: `builder.AddProject<Projects.aspire1_Web>("webfrontend").WithReference(weatherService)`
 
 ### Health Checks
 
@@ -360,10 +355,10 @@ azd down --force --purge
 ### Good: Service Discovery with WithReference
 
 ```csharp
-// In AppHost Program.cs
-var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice");
+// In AppHost AppHost.cs
+var weatherService = builder.AddProject<Projects.aspire1_WeatherService>("weatherservice");
 var webApp = builder.AddProject<Projects.aspire1_Web>("webfrontend")
-    .WithReference(apiService);  // ✓ Automatic service discovery
+    .WithReference(weatherService);  // ✓ Automatic service discovery
 ```
 
 ### Bad: Hard-coded URLs
