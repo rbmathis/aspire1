@@ -61,7 +61,7 @@ Note: aspire1.ApiService exists but is not currently used in the AppHost orchest
 ### All ↔ ServiceDefaults
 - **Interface**: AddServiceDefaults() extension
 - **Contract**: Health checks, OpenTelemetry, resilience policies
-- **Impact**: Changes here affect ALL three services
+- **Impact**: Changes here affect ALL services
 - **Agents**: All agents coordinate before making changes
 - **Testing**: All service tests must pass
 
@@ -73,7 +73,7 @@ Note: aspire1.ApiService exists but is not currently used in the AppHost orchest
 - infra-agent deploying resources while weather-agent develops new endpoints
 
 ### ⚠️ Requires Coordination
-- Any change to aspire1.ServiceDefaults (breaks all if wrong)
+- Any change to aspire1.ServiceDefaults (affects ALL services)
 - Adding new service-to-service endpoints
 - Changing health check formats
 - Modifying DTO contracts between services

@@ -11,15 +11,15 @@ Note: This file is guidance. Mutation rules live in `.agent-context.json` (repo 
 
 ```csharp
 // Contract
-public async Task<WeatherForecast[]> GetWeatherAsync(CancellationToken cancellationToken = default)
+public async Task<WeatherForecast[]> GetWeatherAsync(int maxItems = 10, CancellationToken cancellationToken = default)
 
 // Endpoint: aspire1.WeatherService GET /weatherforecast
 ```
 
 **Coordination**:
-- Under Option B, web-agent may change `WeatherApiClient`; coordinate with weather-agent for any contract/DTO change or `/weatherforecast` behavior change
+- web-agent may change `WeatherApiClient`; coordinate with weather-agent for any contract/DTO change or `/weatherforecast` behavior change
 - weather-agent must maintain backward compatibility with `/weatherforecast` endpoint
-- Changes to DTO require updates in both projects
+- Changes to `WeatherForecast` DTO require updates in both projects
 
 **Testing**:
 - Integration tests in `aspire1.Web.Tests/WeatherApiClientTests.cs`
@@ -39,7 +39,7 @@ public static IHealthChecksBuilder AddServiceDefaults(...)
 - All agents depend on this
 
 **Coordination**:
-- **MUST** coordinate both agents (web, weather) before changing health check format
+- **MUST** coordinate both web-agent and weather-agent before changing health check format
 - Any service change must have corresponding health check update
 - Backward compatibility required for 30 days minimum
 
@@ -75,7 +75,7 @@ public record WeatherForecast(DateOnly Date, int TemperatureC, int Humidity, str
 ```
 
 **Coordination**:
-- If changing structure, BOTH agents (web, weather) must update together
+- If changing structure, both web-agent and weather-agent must update together
 - Currently defined in 2 locations (duplication is OK for independent deployment)
 - Breaking changes require 2+ week deprecation notice
 
@@ -125,22 +125,20 @@ Example:
        │ HTTP
        ▼
 ┌───────────────────┐       WeatherApiClient        ┌──────────────────────┐
-│ aspire1.Web       │─────────────────────────────→│ aspire1.WeatherService│
-│ (Blazor Server)   │ GET /weatherforecast          │                       │
-│                   │←─────────────────────────────│ → WeatherForecast[]   │
-│ WeatherForecast[] │                               └──────────────────────┘
-└───────────────────┘
-
-Note: aspire1.ApiService exists in codebase but is not included in current AppHost orchestration.
+│ aspire1.Web       │─────────────────────────────→│ aspire1.Weather      │
+│ (Blazor Server)   │ GET /weatherforecast          │    Service           │
+│                   │←─────────────────────────────│                      │
+│ WeatherForecast[] │                               │ → WeatherForecast[]  │
+└───────────────────┘                               └──────────────────────┘
 ```
 
 ## Failure Handling
 
 ### If WeatherService is down
-- Web: WeatherApiClient gets timeout, displays error to user
-- **Agent action**: weather-agent must fix WeatherService, no breaking changes to endpoint contract
+- Web: WeatherApiClient gets timeout/error, displays error to user
+- **Agent action**: weather-agent must fix WeatherService, no breaking changes to API contract
 
 ### If health checks fail
 - AppHost: Service marked unhealthy, may not receive traffic
 - Alerts: infra-agent receives notifications
-- **Agent action**: All agents investigate which service is failing
+- **Agent action**: Relevant agent investigates which service is failing
