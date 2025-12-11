@@ -19,6 +19,8 @@ All services ▼
 │aspire1.ServiceDefaults     │
 │(Shared infrastructure)     │
 └────────────────────────────┘
+
+Note: aspire1.ApiService exists but is not currently used in the AppHost orchestration.
 ```
 
 ## Dependency Graph
@@ -29,17 +31,21 @@ All services ▼
 
 ### aspire1.WeatherService → Dependencies
 - ✅ aspire1.ServiceDefaults (health checks, tracing)
-- ❌ aspire1.Web (should never call - creates cycle)
+- ❌ aspire1.Web (should never call)
 
 ### aspire1.ServiceDefaults → Dependencies
 - ✅ None (standalone shared library)
 - ✅ All services depend on this
 
+### aspire1.ApiService (Not Currently Orchestrated)
+- Exists in codebase but not added to AppHost
+- Would integrate: WeatherService → ApiService → Web (if activated)
+
 ## Critical Coordination Points
 
 | Agent | Readonly Dependencies | Can Modify | Must Notify |
 |-------|----------------------|-----------|-------------|
-| web-agent | WeatherService, ServiceDefaults | Web components, endpoints | weather-agent if changing API expectations |
+| web-agent | WeatherService, ServiceDefaults | Web components, WeatherApiClient | weather-agent if changing API expectations |
 | weather-agent | ServiceDefaults | Weather data, models, endpoints | web-agent if changing endpoint contract |
 | infra-agent | All services (reference) | Bicep, Azure resources | All agents before deploying breaking changes |
 
@@ -63,6 +69,7 @@ All services ▼
 
 ### ✅ Safe Parallel Work
 - web-agent modifying Components/ while weather-agent modifies Services/
+- weather-agent adding endpoints while web-agent develops UI
 - infra-agent deploying resources while weather-agent develops new endpoints
 
 ### ⚠️ Requires Coordination

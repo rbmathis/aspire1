@@ -6,7 +6,7 @@ Note: This file is guidance. Mutation rules live in `.agent-context.json` (repo 
 
 ## Current Integration Points
 
-### 1. Web → Weather Service
+### 1. Web → Weather Service (Direct)
 **Location**: `aspire1.Web/WeatherApiClient.cs`
 
 ```csharp
@@ -68,10 +68,10 @@ builder.ConfigureOpenTelemetry(...)
 
 ### WeatherForecast
 **Defined in**: Each service defines its own version
-**Used by**: Web → API → Weather
+**Used by**: Web → Weather
 
 ```csharp
-public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary);
+public record WeatherForecast(DateOnly Date, int TemperatureC, int Humidity, string? Summary);
 ```
 
 **Coordination**:
@@ -86,6 +86,8 @@ public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary);
 | WeatherService | `/weatherforecast` | GET | weather-agent | none | `WeatherForecast[]` |
 | All | `/health/detailed` | GET | All | none | JSON health status |
 | All | `/version` | GET | All | none | JSON with version |
+
+Note: aspire1.ApiService exists but is not currently used in AppHost orchestration.
 
 ## Adding New Integration Points
 
