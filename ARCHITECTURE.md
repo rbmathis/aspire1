@@ -1,8 +1,8 @@
 # Architecture Documentation - aspire1
 
 > **Version:** 1.0.0
-> **Last Updated:** December 9, 2025
-> **Stack:** .NET Aspire 13.x, .NET 10.0, Azure Container Apps
+> **Last Updated:** December 12, 2025
+> **Stack:** .NET Aspire 9.0, .NET 9.0, Azure Container Apps
 
 ## 🎯 High-Level Architecture
 
@@ -14,7 +14,7 @@ graph TB
 
     subgraph "Container Apps"
         Web[aspire1-web<br/>Blazor Server]
-        API[aspire1-apiservice<br/>Minimal API]
+        API[aspire1-weatherservice<br/>Minimal API]
     end
 
     subgraph "Azure Services"
@@ -55,23 +55,23 @@ graph TB
 
 ## 📊 Component Matrix
 
-| Component                    | Type          | Port(s)          | Dependencies            | Health Endpoint               | Container Image                |
-| ---------------------------- | ------------- | ---------------- | ----------------------- | ----------------------------- | ------------------------------ |
-| **aspire1.Web**              | Blazor Server | 8080, 8443       | aspire1.ApiService      | `/health`                     | `aspire1-web:{version}`        |
-| **aspire1.ApiService**       | Minimal API   | 8080, 8443       | aspire1.ServiceDefaults | `/health`, `/health/detailed` | `aspire1-apiservice:{version}` |
-| **aspire1.ServiceDefaults**  | Class Library | N/A              | -                       | N/A                           | N/A                            |
-| **aspire1.AppHost**          | Orchestrator  | 5000 (dashboard) | All projects            | N/A                           | N/A                            |
-| **aspire1.Web.Tests**        | Test Project  | N/A              | aspire1.Web             | N/A                           | N/A                            |
-| **aspire1.ApiService.Tests** | Test Project  | N/A              | aspire1.ApiService      | N/A                           | N/A                            |
+| Component                         | Type          | Port(s)          | Dependencies                | Health Endpoint               | Container Image                     |
+| --------------------------------- | ------------- | ---------------- | --------------------------- | ----------------------------- | ----------------------------------- |
+| **aspire1.Web**                   | Blazor Server | 8080, 8443       | aspire1.WeatherService      | `/health`                     | `aspire1-web:{version}`             |
+| **aspire1.WeatherService**        | Minimal API   | 8080, 8443       | aspire1.ServiceDefaults, Redis, Azure App Config | `/health`, `/health/detailed` | `aspire1-weatherservice:{version}` |
+| **aspire1.ServiceDefaults**       | Class Library | N/A              | -                           | N/A                           | N/A                                 |
+| **aspire1.AppHost**               | Orchestrator  | 5000 (dashboard) | All projects                | N/A                           | N/A                                 |
+| **aspire1.Web.Tests**             | Test Project  | N/A              | aspire1.Web                 | N/A                           | N/A                                 |
+| **aspire1.WeatherService.Tests**  | Test Project  | N/A              | aspire1.WeatherService      | N/A                           | N/A                                 |
 
 ### Additional Endpoints
 
-| Service            | Endpoint               | Purpose                                        |
-| ------------------ | ---------------------- | ---------------------------------------------- |
-| aspire1.ApiService | `GET /`                | Service status message                         |
-| aspire1.ApiService | `GET /weatherforecast` | Sample weather data API                        |
-| aspire1.ApiService | `GET /version`         | Version + commit SHA for deployment tracking   |
-| aspire1.ApiService | `GET /health/detailed` | Enhanced health with version for OpenTelemetry |
+| Service                | Endpoint               | Purpose                                        |
+| ---------------------- | ---------------------- | ---------------------------------------------- |
+| aspire1.WeatherService | `GET /`                | Service status message                         |
+| aspire1.WeatherService | `GET /weatherforecast` | Weather data API with Redis caching           |
+| aspire1.WeatherService | `GET /version`         | Version + commit SHA for deployment tracking   |
+| aspire1.WeatherService | `GET /health/detailed` | Enhanced health with version and feature flags |
 
 ## 📊 Custom Telemetry & Observability
 
@@ -125,41 +125,49 @@ Automated alerts with email notifications:
 
 ```
 aspire1/
-├── aspire1.AppHost/              # Orchestration & service discovery
-│   ├── AppHost.cs                # Defines service topology
-│   ├── appsettings.json          # Environment-agnostic config
-│   └── ARCHITECTURE.md           # AppHost-specific architecture
+├── aspire1.AppHost/                  # Orchestration & service discovery
+│   ├── AppHost.cs                    # Defines service topology
+│   ├── appsettings.json              # Environment-agnostic config
+│   └── ARCHITECTURE.md               # AppHost-specific architecture
 │
-├── aspire1.ApiService/           # Backend REST API
-│   ├── Program.cs                # API endpoints & middleware
-│   ├── appsettings.json          # Default configuration
-│   └── ARCHITECTURE.md           # API service architecture
+├── aspire1.WeatherService/           # Backend REST API
+│   ├── Program.cs                    # API endpoints & middleware
+│   ├── Services/
+│   │   └── CachedWeatherService.cs   # Redis-backed caching service
+│   ├── appsettings.json              # Default configuration
+│   └── ARCHITECTURE.md               # API service architecture
 │
-├── aspire1.Web/                  # Blazor Server frontend
-│   ├── Program.cs                # Web app configuration
-│   ├── Components/               # Blazor components
-│   │   ├── Pages/                # Routable pages
-│   │   └── Layout/               # Layout components
-│   └── ARCHITECTURE.md           # Web service architecture
+├── aspire1.Web/                      # Blazor Server frontend
+│   ├── Program.cs                    # Web app configuration
+│   ├── WeatherApiClient.cs           # Typed HTTP client
+│   ├── Components/                   # Blazor components
+│   │   ├── Pages/                    # Routable pages
+│   │   │   ├── Counter.razor         # Counter demo with metrics
+│   │   │   ├── Weather.razor         # Weather forecast display
+│   │   │   ├── FeatureDemo.razor     # Feature flag demo
+│   │   │   └── ...
+│   │   └── Layout/                   # Layout components
+│   └── ARCHITECTURE.md               # Web service architecture
 │
-├── aspire1.ServiceDefaults/      # Shared Aspire defaults
-│   ├── Extensions.cs             # OpenTelemetry, health, resilience
-│   └── ARCHITECTURE.md           # Service defaults architecture
+├── aspire1.ServiceDefaults/          # Shared Aspire defaults
+│   ├── Extensions.cs                 # OpenTelemetry, health, resilience
+│   ├── ApplicationMetrics.cs         # Custom metrics definitions
+│   └── ARCHITECTURE.md               # Service defaults architecture
 │
-├── aspire1.ApiService.Tests/     # API service unit tests
+├── aspire1.WeatherService.Tests/     # API service unit tests
 │   └── Services/
 │       └── CachedWeatherServiceTests.cs  # Cache service tests
 │
-├── aspire1.Web.Tests/            # Web frontend unit tests
-│   └── WeatherApiClientTests.cs  # HTTP client tests
+├── aspire1.Web.Tests/                # Web frontend unit tests
+│   └── WeatherApiClientTests.cs      # HTTP client tests
 │
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml            # CI/CD pipeline (GitHub Actions)
+│       └── deploy.yml                # CI/CD pipeline (GitHub Actions)
 │
-├── Directory.Build.props         # Centralized versioning with MinVer
-├── azure.yaml                    # Azure Developer CLI manifest
-└── ARCHITECTURE.md               # This file
+├── Directory.Build.props             # Centralized versioning with MinVer
+├── azure.yaml                        # Azure Developer CLI manifest
+└── ARCHITECTURE.md                   # This file
 ```
 
 ## 🔄 Service Discovery & Communication
@@ -171,11 +179,11 @@ sequenceDiagram
     participant User
     participant Web as aspire1.Web<br/>(Blazor Server)
     participant ServiceDiscovery as Service Discovery
-    participant API as aspire1.ApiService<br/>(REST API)
+    participant API as aspire1.WeatherService<br/>(REST API)
 
     User->>Web: GET /weather
-    Web->>ServiceDiscovery: Resolve "apiservice"
-    ServiceDiscovery-->>Web: https://apiservice:8443
+    Web->>ServiceDiscovery: Resolve "weatherservice"
+    ServiceDiscovery-->>Web: https://weatherservice:8443
     Web->>API: GET /weatherforecast
     API-->>Web: Weather data (JSON)
     Web-->>User: Rendered weather page
@@ -186,7 +194,7 @@ sequenceDiagram
 ### Service Discovery Configuration
 
 - **Scheme:** `https+http://` (prefers HTTPS, falls back to HTTP)
-- **Internal DNS:** `apiservice` resolves within ACA Environment
+- **Internal DNS:** `weatherservice` resolves within ACA Environment
 - **External access:** Only `aspire1-web` exposed via ingress
 - **Resilience:** Polly with retry, circuit breaker, timeout (from ServiceDefaults)
 
@@ -213,7 +221,7 @@ flowchart LR
 
 ```bash
 # Set local secrets
-dotnet user-secrets set "ConnectionStrings:MyDb" "..." --project aspire1.ApiService
+dotnet user-secrets set "ConnectionStrings:MyDb" "..." --project aspire1.WeatherService
 
 # Run locally
 dotnet run --project aspire1.AppHost
@@ -259,7 +267,7 @@ graph TB
         subgraph "Resource Group: rg-aspire1-prod"
             subgraph "ACA Environment: aspire1-env"
                 WebApp[Container App: aspire1-web<br/>Min: 1, Max: 10<br/>Ingress: External]
-                ApiApp[Container App: aspire1-apiservice<br/>Min: 1, Max: 5<br/>Ingress: Internal]
+                ApiApp[Container App: aspire1-weatherservice<br/>Min: 1, Max: 5<br/>Ingress: Internal]
             end
 
             ACR[Container Registry<br/>aspire1acr.azurecr.io]
@@ -284,7 +292,7 @@ graph TB
 
 ### Container App Configuration
 
-| Setting           | aspire1-web                    | aspire1-apiservice            |
+| Setting           | aspire1-web                    | aspire1-weatherservice        |
 | ----------------- | ------------------------------ | ----------------------------- |
 | **Ingress**       | External (HTTPS)               | Internal only                 |
 | **Min Replicas**  | 1                              | 1                             |
@@ -344,7 +352,7 @@ flowchart LR
 graph LR
     subgraph "Container Apps"
         Web[aspire1-web]
-        API[aspire1-apiservice]
+        API[aspire1-weatherservice]
     end
 
     subgraph "Azure Monitor"
@@ -413,10 +421,10 @@ exceptions
 
 ### KEDA Autoscaling Rules
 
-| Service            | Trigger               | Scale In Delay | Scale Out Delay |
-| ------------------ | --------------------- | -------------- | --------------- |
-| aspire1-web        | HTTP (100 concurrent) | 5 min          | 30 sec          |
-| aspire1-apiservice | HTTP (50 concurrent)  | 5 min          | 30 sec          |
+| Service                | Trigger               | Scale In Delay | Scale Out Delay |
+| ---------------------- | --------------------- | -------------- | --------------- |
+| aspire1-web            | HTTP (100 concurrent) | 5 min          | 30 sec          |
+| aspire1-weatherservice | HTTP (50 concurrent)  | 5 min          | 30 sec          |
 
 **Cold Start Strategy:**
 
@@ -439,7 +447,7 @@ curl http://localhost:{port}/health
 curl http://localhost:{port}/version
 
 # Tail logs
-dotnet watch --project aspire1.ApiService
+dotnet watch --project aspire1.WeatherService
 ```
 
 ### Azure (Production)
@@ -450,18 +458,18 @@ azd show
 
 # Get container app logs (last 10 min)
 az containerapp logs show \
-  --name aspire1-apiservice \
+  --name aspire1-weatherservice \
   --resource-group rg-aspire1-prod \
   --follow
 
 # Check container app status
 az containerapp show \
-  --name aspire1-apiservice \
+  --name aspire1-weatherservice \
   --resource-group rg-aspire1-prod \
   --query "properties.runningStatus"
 
 # Test version endpoint
-curl https://aspire1-apiservice.{aca-env}.eastus.azurecontainerapps.io/version
+curl https://aspire1-weatherservice.{aca-env}.eastus.azurecontainerapps.io/version
 
 # View Application Insights live metrics
 az monitor app-insights component show \
@@ -506,15 +514,16 @@ git push origin v2.0.0
 
 ### Container Image Tags
 
-- **Production:** `aspire1-apiservice:1.2.3`
-- **Latest:** `aspire1-apiservice:latest` (always points to latest release)
-- **Rollback:** `azd deploy --from-revision aspire1-apiservice--1-2-2`
+- **Production:** `aspire1-weatherservice:1.2.3`
+- **Latest:** `aspire1-weatherservice:latest` (always points to latest release)
+- **Rollback:** `azd deploy --from-revision aspire1-weatherservice--1-2-2`
 
 ## 🎯 Next Steps & Enhancements
 
 ### Planned Features
 
-- [ ] Implement Azure App Configuration for feature flags
+- [x] Implement Azure App Configuration for feature flags
+- [x] Add Redis distributed caching with offline-first fallback
 - [ ] Add Azure SQL Database with EF Core
 - [ ] Multi-region deployment with Front Door
 - [ ] Dapr integration for pub/sub and state management
@@ -550,10 +559,10 @@ The solution includes comprehensive unit tests following industry best practices
 
 **Test Projects:**
 
-| Project                  | Tests | Coverage | Description                            |
-| ------------------------ | ----- | -------- | -------------------------------------- |
-| aspire1.ApiService.Tests | 7     | >80%     | Cache service logic and error handling |
-| aspire1.Web.Tests        | 10    | >80%     | HTTP client behavior and edge cases    |
+| Project                       | Tests | Coverage | Description                            |
+| ----------------------------- | ----- | -------- | -------------------------------------- |
+| aspire1.WeatherService.Tests  | 7     | >80%     | Cache service logic and error handling |
+| aspire1.Web.Tests             | 10    | >80%     | HTTP client behavior and edge cases    |
 
 **Test Naming Convention:**
 
@@ -569,7 +578,7 @@ Example: GetWeatherAsync_SuccessfulResponse_ReturnsForecasts
 dotnet test
 
 # Run specific project tests
-dotnet test aspire1.ApiService.Tests
+dotnet test aspire1.WeatherService.Tests
 dotnet test aspire1.Web.Tests
 
 # Run with coverage
@@ -588,7 +597,7 @@ dotnet test --collect:"XPlat Code Coverage"
 **Key Test Patterns:**
 
 ```csharp
-// ApiService: Mocking IDistributedCache
+// WeatherService: Mocking IDistributedCache
 _mockCache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
     .Returns(cachedData);
 
@@ -611,6 +620,184 @@ Future integration tests will use `Aspire.Hosting.Testing` to:
 - Verify health endpoints and OpenTelemetry traces
 - Validate Redis caching end-to-end
 
+## 🔗 Dependencies & Change Impact Analysis
+
+### Component Dependency Graph
+
+```mermaid
+graph TB
+    AppHost[aspire1.AppHost]
+    ServiceDefaults[aspire1.ServiceDefaults]
+    WeatherService[aspire1.WeatherService]
+    Web[aspire1.Web]
+    WeatherServiceTests[aspire1.WeatherService.Tests]
+    WebTests[aspire1.Web.Tests]
+    
+    AppHost --> WeatherService
+    AppHost --> Web
+    WeatherService --> ServiceDefaults
+    Web --> ServiceDefaults
+    Web --> WeatherService
+    WeatherServiceTests --> WeatherService
+    WebTests --> Web
+    
+    style ServiceDefaults fill:#ff6b6b,color:#fff
+    style AppHost fill:#ffd700
+```
+
+### Files That Can Be Changed in Isolation
+
+These files/paths can be modified without breaking other parts of the application:
+
+#### ✅ Safe to Change Independently
+
+| File/Path | What It Controls | Why It's Safe |
+| --- | --- | --- |
+| `aspire1.Web/Components/Pages/*.razor` | Individual page UI and logic | Pages are isolated; changing one doesn't affect others |
+| `aspire1.Web/wwwroot/*` | Static assets (CSS, JS, images) | Web assets don't impact API or service logic |
+| `aspire1.WeatherService/Services/CachedWeatherService.cs` | Internal caching logic | Implementation detail; API contract unchanged |
+| `*.Tests/**` | Test code | Tests don't affect production code |
+| `ARCHITECTURE.md` files | Documentation only | No code impact |
+| `README.md`, `TELEMETRY.md` | Documentation | No code impact |
+| `infra/dashboard.bicep` | Azure Dashboard definition | UI-only; doesn't affect app logic |
+| `infra/alerts.bicep` | Alert rules | Monitoring-only; doesn't affect app behavior |
+| `.github/workflows/*.yml` | CI/CD pipelines | Deployment process; doesn't change code |
+| `scripts/*` | Build/deployment scripts | Tooling-only |
+
+#### ⚠️ Requires Coordination (Change Multiple Files)
+
+| File/Path | What It Controls | What Else Needs Updating |
+| --- | --- | --- |
+| `aspire1.ServiceDefaults/Extensions.cs` | OpenTelemetry, health checks, resilience | All services depend on this; test thoroughly |
+| `aspire1.ServiceDefaults/ApplicationMetrics.cs` | Custom metric definitions | Update both WeatherService and Web if metrics change |
+| `aspire1.AppHost/AppHost.cs` | Service registration and references | Update if service names or dependencies change |
+| `aspire1.WeatherService/Program.cs` (endpoints) | API contract | Update `WeatherApiClient.cs` if endpoints change |
+| `aspire1.Web/WeatherApiClient.cs` | HTTP client interface | Must match WeatherService endpoints |
+| `Directory.Build.props` | Versioning and shared MSBuild props | Affects all projects |
+| `azure.yaml` | Azure deployment manifest | Update if services, resources, or hooks change |
+
+### Breaking Change Warnings
+
+#### 🚨 HIGH RISK: Changes That Break Other Components
+
+| What You Change | What It Breaks | How to Prevent |
+| --- | --- | --- |
+| **Service name in AppHost** (e.g., "weatherservice") | `WeatherApiClient` can't resolve service | Keep service names stable; coordinate with all consumers |
+| **Endpoint paths** in `WeatherService/Program.cs` | `WeatherApiClient` 404 errors | Version endpoints (e.g., `/v1/weatherforecast`) or coordinate deployment |
+| **WeatherForecast record structure** | JSON serialization fails between services | Use API versioning; add fields without removing old ones |
+| **ServiceDefaults health check tags** | Container Apps health probes fail | Test health endpoints after changes |
+| **OpenTelemetry meter name** | Metrics disappear from Application Insights | Coordinate with monitoring team before changing |
+| **Redis cache key format** | Cache misses (not breaking, but performance hit) | Use versioned cache keys |
+| **Feature flag names** | Features break if app expects different names | Coordinate with config team |
+| **Azure resource names in `azd`** | Deployment fails; recreates resources | Never change in production; use new environment |
+
+### Dependency Contracts (Must Keep Stable)
+
+#### 1. Service Discovery Contract
+- **Service name**: `"weatherservice"` in AppHost
+- **Used by**: `WeatherApiClient` in aspire1.Web
+- **Impact**: Hard failure if changed without coordination
+
+#### 2. API Endpoint Contract
+- **Endpoints**: `GET /weatherforecast`, `GET /version`, `GET /health/detailed`
+- **Used by**: `WeatherApiClient.GetWeatherAsync()`
+- **Impact**: 404 errors if paths change
+
+#### 3. Data Transfer Objects
+- **Type**: `WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)`
+- **Used by**: Both WeatherService and Web (deserialization)
+- **Impact**: JSON deserialization fails if structure changes
+
+#### 4. ServiceDefaults API
+- **Methods**: `AddServiceDefaults()`, `MapDefaultEndpoints()`, `ConfigureOpenTelemetry()`
+- **Used by**: All services (WeatherService, Web)
+- **Impact**: Build errors if signatures change
+
+#### 5. ApplicationMetrics API
+- **Metrics**: `CounterClicks`, `WeatherApiCalls`, `SunnyForecasts`, `CacheHits`, `CacheMisses`, `ApiCallDuration`
+- **Used by**: WeatherService, Web (Counter.razor, WeatherApiClient)
+- **Impact**: Metrics stop flowing to Application Insights
+
+#### 6. AppHost Resource References
+- **Resources**: `appinsights`, `appconfig`, `cache` (Redis)
+- **Used by**: Both WeatherService and Web via `WithReference()`
+- **Impact**: Connection strings not injected; services fail to connect
+
+### Safe Refactoring Strategies
+
+#### Adding New Features
+✅ **Safe**:
+- Add new endpoints without removing old ones
+- Add new optional fields to DTOs (use nullable types)
+- Add new pages to Web
+- Add new metrics
+- Add new feature flags
+
+❌ **Risky**:
+- Removing endpoints (breaks clients)
+- Changing DTO field names (breaks serialization)
+- Removing metrics (breaks dashboards)
+
+#### Changing Implementations
+✅ **Safe**:
+- Change internal `CachedWeatherService` logic
+- Change page UI/styles
+- Change cache expiration times
+- Change health check logic (if health still returns 200)
+
+❌ **Risky**:
+- Changing health endpoint paths (breaks Container Apps probes)
+- Changing meter names (breaks Application Insights queries)
+- Changing service names (breaks service discovery)
+
+#### Database/State Changes
+✅ **Safe** (when implemented):
+- Add new columns (with defaults)
+- Add new tables
+- Add indexes
+
+❌ **Risky**:
+- Drop columns (use soft delete first)
+- Change primary keys
+- Change schema without migration
+
+### Testing Change Impact
+
+Before making changes, verify impact with these commands:
+
+```bash
+# 1. Find all references to a service name
+grep -r "weatherservice" --include="*.cs" --include="*.razor"
+
+# 2. Find all API client usages
+grep -r "WeatherApiClient" --include="*.cs" --include="*.razor"
+
+# 3. Find all metric references
+grep -r "ApplicationMetrics" --include="*.cs" --include="*.razor"
+
+# 4. Build all projects to check for breaking changes
+dotnet build aspire1.sln
+
+# 5. Run all tests to verify contracts
+dotnet test aspire1.sln
+
+# 6. Check AppHost references
+cat aspire1.AppHost/AppHost.cs | grep -E "AddProject|WithReference"
+```
+
+### Change Approval Matrix
+
+| Change Type | Requires Approval | Testing Required |
+| --- | --- | --- |
+| UI-only changes (Razor, CSS) | No | Manual UI testing |
+| Internal implementation (CachedWeatherService) | No | Unit tests |
+| New endpoints (additive) | Review | Integration tests |
+| Endpoint path changes | Yes | Full regression |
+| DTO structure changes | Yes | API compatibility tests |
+| ServiceDefaults changes | Yes | All services smoke test |
+| AppHost service names | Yes | Service discovery tests |
+| Infrastructure (Bicep) | Yes | Deploy to dev first |
+
 ## 📖 References
 
 - [.NET Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/)
@@ -623,6 +810,6 @@ Future integration tests will use `Aspire.Hosting.Testing` to:
 
 ---
 
-**Last Updated:** December 9, 2025
+**Last Updated:** December 12, 2025
 **Maintained by:** DevOps Team
 **Review Cadence:** Every major version bump or architectural change

@@ -1,16 +1,18 @@
-# Architecture - aspire1.ApiService
+# Architecture - aspire1.WeatherService
 
 > **Component Type:** Minimal API (REST)
-> **Framework:** ASP.NET Core 10.0
-> **Purpose:** Backend API service providing weather data and system metadata
+> **Framework:** ASP.NET Core 9.0
+> **Purpose:** Backend API service providing weather data with Redis caching and feature flags
 
 ## 🎯 Overview
 
-The **ApiService** is a lightweight REST API built with ASP.NET Core Minimal APIs. It demonstrates:
+The **WeatherService** is a lightweight REST API built with ASP.NET Core Minimal APIs. It demonstrates:
 
 - Minimal API routing (no controllers)
+- Redis distributed caching with offline-first fallback
+- Azure App Configuration with feature flags
 - OpenTelemetry instrumentation (via ServiceDefaults)
-- Health checks with version metadata
+- Health checks with version metadata and feature flag status
 - Service discovery (consumed by aspire1.Web)
 - SemVer-based deployment tracking
 
@@ -20,9 +22,11 @@ The **ApiService** is a lightweight REST API built with ASP.NET Core Minimal API
 graph TB
     Client[aspire1.Web<br/>HTTP Client]
 
-    subgraph "aspire1.ApiService"
+    subgraph "aspire1.WeatherService"
         Middleware[Middleware Pipeline]
         Routes[Minimal API Routes]
+        CachedService[CachedWeatherService]
+        FeatureFlags[Feature Manager]
         ServiceDefaults[ServiceDefaults<br/>OpenTelemetry, Health]
 
         subgraph "Endpoints"
@@ -36,7 +40,8 @@ graph TB
 
     subgraph "Azure Services"
         AppInsights[Application Insights]
-        KeyVault[Key Vault]
+        AppConfig[Azure App Configuration]
+        Redis[Azure Cache for Redis]
     end
 
     Client -->|Service Discovery| Middleware
@@ -46,12 +51,18 @@ graph TB
     Routes --> Version
     Routes --> HealthDetailed
     Routes --> Health
+    
+    Weather --> FeatureFlags
+    Weather --> CachedService
+    CachedService --> Redis
+    HealthDetailed --> FeatureFlags
 
     ServiceDefaults -.->|Traces, Metrics| AppInsights
-    ServiceDefaults -.->|Secrets| KeyVault
+    ServiceDefaults -.->|Feature Flags| AppConfig
 
     style Routes fill:#0078d4,stroke:#005a9e,color:#fff
-    style ServiceDefaults fill:#50e6ff
+    style CachedService fill:#50e6ff
+    style FeatureFlags fill:#90EE90
 ```
 
 ## 📡 API Endpoints
@@ -70,7 +81,10 @@ graph TB
 
 ### `GET /weatherforecast`
 
-**Purpose:** Sample weather data generator
+**Purpose:** Weather data API with Redis caching and feature flag control
+
+**Query Parameters:**
+- `maxItems` (optional, default: 10) - Number of forecast days to return
 
 **Response:**
 
@@ -82,38 +96,46 @@ graph TB
     "temperatureF": 59,
     "summary": "Mild"
   }
-  // ... 4 more days
+  // ... more days
 ]
 ```
 
+**Feature Flag:**
+- Controlled by `WeatherForecast` feature flag in Azure App Configuration
+- Returns 503 with error message if feature is disabled
+
 **Implementation:**
 
-- Generates 5 days of random weather forecasts
-- Uses in-memory data (no database)
+- Delegates to `CachedWeatherService` for Redis-backed caching
+- Cache TTL: 5 minutes (sliding)
+- Generates random forecast data (no database)
+- Falls back to in-memory cache if Redis unavailable
 - Demonstrates JSON serialization
 
 **Custom Telemetry:**
 
 ```csharp
+// Track feature flag status
+if (!await featureManager.IsEnabledAsync("WeatherForecast"))
+{
+    return Results.Json(new { error = "Weather forecast feature is currently disabled" }, statusCode: 503);
+}
+
 // Tracks total API calls
 ApplicationMetrics.WeatherApiCalls.Add(1,
     new KeyValuePair<string, object?>("endpoint", "weatherforecast"),
     new KeyValuePair<string, object?>("feature_enabled", "true"));
 
 // Tracks sunny forecasts by temperature range
-foreach (var forecast in forecasts)
+foreach (var forecast in forecasts.Where(f => f.Summary?.Contains("Sunny") == true))
 {
-    if (forecast.Summary?.Contains("Sunny", StringComparison.OrdinalIgnoreCase) == true)
-    {
-        ApplicationMetrics.SunnyForecasts.Add(1,
-            new KeyValuePair<string, object?>("temperature_range",
-                ApplicationMetrics.GetTemperatureRange(forecast.TemperatureC)));
-    }
+    ApplicationMetrics.SunnyForecasts.Add(1,
+        new KeyValuePair<string, object?>("temperature_range",
+            ApplicationMetrics.GetTemperatureRange(forecast.TemperatureC)));
 }
 ```
 
-**Cache Performance Metrics:**
-The `CachedWeatherService` tracks cache efficiency:
+**CachedWeatherService Metrics:**
 
 ```csharp
 // Cache hit
@@ -137,7 +159,7 @@ ApplicationMetrics.CacheMisses.Add(1,
 {
   "version": "1.0.0+a1af010e18",
   "commitSha": "a1af010",
-  "service": "apiservice",
+  "service": "weatherservice",
   "environment": "Production",
   "timestamp": "2025-12-09T18:30:00Z"
 }
@@ -154,18 +176,34 @@ ApplicationMetrics.CacheMisses.Add(1,
 
 ### `GET /health/detailed`
 
-**Purpose:** Enhanced health check with version metadata for OpenTelemetry correlation
+**Purpose:** Enhanced health check with version metadata and feature flag status for OpenTelemetry correlation
 
-**Response:**
+**Feature Flag:**
+- Controlled by `DetailedHealth` feature flag in Azure App Configuration
+- Returns minimal health info if feature is disabled
+
+**Response (when DetailedHealth enabled):**
 
 ```json
 {
   "status": "healthy",
   "version": "1.0.0+a1af010e18",
   "commitSha": "a1af010",
-  "service": "apiservice",
+  "service": "weatherservice",
   "timestamp": "2025-12-09T18:30:00Z",
-  "uptime": 3600.5
+  "uptime": 3600.5,
+  "features": {
+    "detailedHealth": true,
+    "weatherForecast": true
+  }
+}
+```
+
+**Response (when DetailedHealth disabled):**
+
+```json
+{
+  "status": "healthy"
 }
 ```
 
@@ -220,12 +258,16 @@ sequenceDiagram
 ### Key Configuration Steps
 
 1. **Service Defaults:** Registers OpenTelemetry, health checks, resilience handlers
-2. **Problem Details:** Standardized error responses (RFC 7807)
-3. **OpenAPI:** Swagger/OpenAPI documentation generation
-4. **Version Extraction:** Reads from `APP_VERSION` env var or assembly metadata
-5. **Middleware Pipeline:** Exception handler, HTTPS redirection (production)
-6. **Endpoint Mapping:** Minimal API routes
-7. **Health Endpoints:** `/health`, `/alive` (from ServiceDefaults)
+2. **Azure App Configuration:** Connects to Azure App Config for feature flags (with offline fallback)
+3. **Feature Management:** Registers `IFeatureManager` for runtime feature flag checks
+4. **Redis Distributed Cache:** Configures Redis with offline-first fallback to in-memory cache
+5. **Problem Details:** Standardized error responses (RFC 7807)
+6. **OpenAPI:** Swagger/OpenAPI documentation generation
+7. **CachedWeatherService:** Registers scoped service for Redis-backed weather caching
+8. **Version Extraction:** Reads from `APP_VERSION` env var or assembly metadata
+9. **Middleware Pipeline:** Exception handler, Azure App Config refresh middleware (if configured)
+10. **Endpoint Mapping:** Minimal API routes with feature flag integration
+11. **Health Endpoints:** `/health`, `/alive` (from ServiceDefaults)
 
 ## 🔐 Configuration & Secrets
 
@@ -236,23 +278,266 @@ sequenceDiagram
    - `APP_VERSION` - Injected by AppHost or azd
    - `COMMIT_SHA` - Injected by AppHost or GitHub Actions
    - `OTEL_EXPORTER_OTLP_ENDPOINT` - Application Insights endpoint
+   - `AppConfig:Endpoint` - Azure App Configuration endpoint
+   - `ConnectionStrings:cache` - Redis connection string (from AppHost)
 
-2. **Azure Key Vault References** (production)
+2. **Azure App Configuration** (when configured)
+
+   - Feature flags
+   - Dynamic configuration with 30-second refresh
+
+3. **Azure Key Vault References** (production)
 
    - Connection strings
    - API keys
    - External service credentials
 
-3. **appsettings.{Environment}.json**
+4. **appsettings.{Environment}.json**
 
    - Environment-specific non-sensitive config
+   - Local feature flag fallback
 
-4. **appsettings.json**
+5. **appsettings.json**
 
    - Default non-sensitive config
 
-5. **User Secrets** (local dev only)
+6. **User Secrets** (local dev only)
    - `dotnet user-secrets set "MySecret" "value"`
+
+## 🎛️ Feature Flags
+
+### Azure App Configuration Integration
+
+**Configuration:**
+
+```csharp
+var appConfigEndpoint = builder.Configuration["AppConfig:Endpoint"];
+if (!string.IsNullOrEmpty(appConfigEndpoint))
+{
+    builder.Configuration.AddAzureAppConfiguration(options =>
+    {
+        options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
+               .UseFeatureFlags(featureFlagOptions =>
+               {
+                   featureFlagOptions.SetRefreshInterval(TimeSpan.FromSeconds(30));
+                   featureFlagOptions.Select("*", builder.Environment.EnvironmentName);
+               });
+    });
+}
+```
+
+**Middleware:**
+
+```csharp
+app.UseAzureAppConfiguration(); // Enables dynamic refresh
+```
+
+### Feature Flags Used
+
+| Flag Name | Purpose | Default (Local) | Impact |
+| --- | --- | --- | --- |
+| `WeatherForecast` | Controls `/weatherforecast` endpoint availability | `true` | Returns 503 if disabled |
+| `DetailedHealth` | Controls level of detail in `/health/detailed` | `true` | Returns minimal health if disabled |
+
+### Usage Patterns
+
+**1. Endpoint Gating:**
+
+```csharp
+app.MapGet("/weatherforecast", async (CachedWeatherService service, IFeatureManager featureManager) =>
+{
+    if (!await featureManager.IsEnabledAsync("WeatherForecast"))
+    {
+        return Results.Json(new { error = "Weather forecast feature is currently disabled" }, statusCode: 503);
+    }
+    // ... implementation
+});
+```
+
+**2. Conditional Response:**
+
+```csharp
+app.MapGet("/health/detailed", async (IFeatureManager featureManager) =>
+{
+    var showDetailed = await featureManager.IsEnabledAsync("DetailedHealth");
+    
+    if (showDetailed)
+    {
+        return Results.Ok(new { status = "healthy", version, commitSha, /* ... */ });
+    }
+    
+    return Results.Ok(new { status = "healthy" });
+});
+```
+
+### Offline-First Design
+
+- App starts successfully without Azure App Configuration connection
+- Falls back to local `appsettings.json` for feature flag definitions
+- Logs warning but continues: `"Warning: Could not connect to Azure App Configuration"`
+- Local fallback enables disconnected development
+
+### Managing Feature Flags
+
+**Azure Portal:**
+1. Navigate to Azure App Configuration resource
+2. Feature Manager → Add/Edit flags
+3. Set environment-specific labels (Development, Production)
+4. Changes reflect in app within 30 seconds (refresh interval)
+
+**Azure CLI:**
+
+```bash
+# Enable feature
+az appconfig feature set --name WeatherForecast --label Production --yes
+
+# Disable feature
+az appconfig feature set --name WeatherForecast --label Production --no
+
+# List all features
+az appconfig feature list
+```
+
+## 💾 Redis Caching with CachedWeatherService
+
+### Architecture
+
+The `CachedWeatherService` class provides Redis-backed distributed caching with graceful fallback:
+
+```csharp
+public class CachedWeatherService
+{
+    private readonly IDistributedCache _cache;
+    private readonly ILogger<CachedWeatherService> _logger;
+    private const string CacheKeyPrefix = "api:weather:forecast";
+    
+    // Cache TTL: 5 minutes
+    // Key format: "api:weather:forecast:{maxItems}"
+}
+```
+
+### Caching Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Endpoint as /weatherforecast
+    participant Service as CachedWeatherService
+    participant Redis as Redis Cache
+    
+    Client->>Endpoint: GET /weatherforecast?maxItems=10
+    Endpoint->>Service: GetWeatherForecastAsync(10)
+    Service->>Redis: GetAsync("api:weather:forecast:10")
+    
+    alt Cache HIT
+        Redis-->>Service: Cached JSON data
+        Service->>Service: Deserialize
+        Service->>Service: Track CacheHits metric
+        Service-->>Endpoint: WeatherForecast[]
+    else Cache MISS
+        Redis-->>Service: null
+        Service->>Service: Track CacheMisses metric
+        Service->>Service: GenerateForecasts(10)
+        Service->>Redis: SetAsync with 5-min TTL
+        Service-->>Endpoint: WeatherForecast[]
+    end
+    
+    Endpoint-->>Client: JSON response
+```
+
+### Offline-First Redis Configuration
+
+**AppHost Configuration:**
+
+```csharp
+// Local development: Redis container
+if (isLocalDev)
+{
+    redis = builder.AddRedis("cache");
+}
+// Azure: Managed Redis
+else
+{
+    redis = builder.AddAzureRedis("cache");
+}
+```
+
+**WeatherService Configuration:**
+
+```csharp
+var redisConnectionName = builder.Configuration.GetConnectionString("cache");
+if (!string.IsNullOrEmpty(redisConnectionName))
+{
+    try
+    {
+        builder.AddRedisClient("cache");
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionName;
+        });
+        Console.WriteLine("✅ Redis distributed cache configured successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️  Warning: Could not connect to Redis: {ex.Message}");
+        Console.WriteLine("Falling back to in-memory distributed cache.");
+        builder.Services.AddDistributedMemoryCache(); // ← Fallback
+    }
+}
+else
+{
+    Console.WriteLine("⚠️  Redis not configured (local development mode)");
+    builder.Services.AddDistributedMemoryCache(); // ← Fallback
+}
+```
+
+### Cache Behavior
+
+**Cache Key Naming:**
+- Pattern: `api:weather:forecast:{maxItems}`
+- Example: `api:weather:forecast:10`
+- Namespaced to prevent collisions
+
+**Cache TTL:**
+- **Expiration:** 5 minutes (absolute)
+- **Rationale:** Balance between freshness and performance
+
+**Error Handling:**
+
+```csharp
+try
+{
+    var cachedData = await _cache.GetStringAsync(cacheKey, cancellationToken);
+    if (cachedData != null)
+    {
+        // Cache hit path
+    }
+}
+catch (Exception ex)
+{
+    _logger.LogWarning(ex, "Cache read failed, falling back to generation");
+}
+```
+
+- All cache operations are wrapped in try-catch
+- Cache failures don't break API (graceful degradation)
+- Generates fresh data if cache unavailable
+
+### Cache Metrics
+
+```csharp
+// Track cache hits
+ApplicationMetrics.CacheHits.Add(1,
+    new KeyValuePair<string, object?>("entity", "weather"));
+
+// Track cache misses
+ApplicationMetrics.CacheMisses.Add(1,
+    new KeyValuePair<string, object?>("entity", "weather"));
+```
+
+These metrics flow to Application Insights for monitoring:
+- Cache hit rate: `CacheHits / (CacheHits + CacheMisses)`
+- Target: >80% hit rate after warm-up
 
 ### Example: Adding a Database Connection
 
@@ -295,7 +580,7 @@ env:
 sequenceDiagram
     participant User
     participant Web as aspire1.Web
-    participant API as aspire1.ApiService
+    participant API as aspire1.WeatherService
     participant OTEL as Application Insights
 
     User->>Web: GET /weather
@@ -316,7 +601,7 @@ sequenceDiagram
 ```kql
 // Find all requests to /weatherforecast with version 1.0.0
 dependencies
-| where target == "apiservice"
+| where target == "weatherservice"
 | where name contains "weatherforecast"
 | extend version = tostring(customDimensions.version)
 | where version == "1.0.0"
@@ -329,7 +614,7 @@ dependencies
 
 ```bash
 # Run standalone (requires AppHost for service discovery)
-dotnet run --project aspire1.ApiService
+dotnet run --project aspire1.WeatherService
 
 # Access endpoints
 curl http://localhost:7002/weatherforecast
@@ -340,9 +625,14 @@ curl http://localhost:7002/version
 
 **Container Image:**
 
-- **Registry:** `{acr}.azurecr.io`
-- **Repository:** `aspire1-apiservice`
-- **Tag:** `{version}` (e.g., `1.0.0`)
+```bash
+# Run standalone (requires AppHost for service discovery)
+dotnet run --project aspire1.WeatherService
+
+# Access endpoints
+curl http://localhost:7002/weatherforecast
+curl http://localhost:7002/version
+```
 
 **Environment Variables (injected by azd):**
 
@@ -405,7 +695,7 @@ public class WeatherForecastTests
 
 ```csharp
 // Example with Aspire.Hosting.Testing
-public class ApiServiceTests : IAsyncLifetime
+public class WeatherServiceTests : IAsyncLifetime
 {
     private DistributedApplication _app = null!;
     private HttpClient _client = null!;
@@ -417,7 +707,7 @@ public class ApiServiceTests : IAsyncLifetime
         _app = await appHost.BuildAsync();
         await _app.StartAsync();
 
-        _client = _app.CreateHttpClient("apiservice");
+        _client = _app.CreateHttpClient("weatherservice");
     }
 
     [Fact]
@@ -446,13 +736,13 @@ public class ApiServiceTests : IAsyncLifetime
 
 ```bash
 # From aspire1.Web container
-curl http://apiservice/health
+curl http://weatherservice/health
 ```
 
 **Fix:**
 
-- Ensure AppHost uses `WithReference(apiService)` on Web
-- Verify service name matches: `"apiservice"` (not `"aspire1.ApiService"`)
+- Ensure AppHost uses `WithReference(weatherService)` on Web
+- Verify service name matches: `"weatherservice"` (not `"aspire1.WeatherService"`)
 
 ### Version Shows "unknown"
 
@@ -466,7 +756,7 @@ azd env get-values | findstr VERSION
 
 # Check assembly version
 dotnet build -c Release
-$dll = Get-Item "bin/Release/net10.0/aspire1.ApiService.dll"
+$dll = Get-Item "bin/Release/net9.0/aspire1.WeatherService.dll"
 [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dll.FullName)
 ```
 
@@ -485,7 +775,7 @@ $dll = Get-Item "bin/Release/net10.0/aspire1.ApiService.dll"
 ```bash
 # View container logs
 az containerapp logs show \
-  --name aspire1-apiservice \
+  --name aspire1-weatherservice \
   --resource-group rg-aspire1-prod \
   --follow
 ```
@@ -541,7 +831,13 @@ app.MapGet("/health/detailed", () => new
     status = "healthy",
     version,
     commitSha,
-    service = "apiservice",
+var version = builder.Configuration["APP_VERSION"] ??
+              Assembly.GetExecutingAssembly()
+                      .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                      ?.InformationalVersion ?? "unknown";
+var commitSha = builder.Configuration["COMMIT_SHA"] ??
+                Environment.GetEnvironmentVariable("GITHUB_SHA")?[..7] ?? "local";
+```
     timestamp = DateTime.UtcNow,
     uptime = Environment.TickCount64 / 1000.0
 })
@@ -798,10 +1094,10 @@ curl http://localhost:7002/health
 
 # Build release container
 dotnet publish -c Release
-docker build -t aspire1-apiservice:1.0.0 .
+docker build -t aspire1-weatherservice:1.0.0 .
 
 # Run in container locally
-docker run -p 8080:8080 -e APP_VERSION=1.0.0 aspire1-apiservice:1.0.0
+docker run -p 8080:8080 -e APP_VERSION=1.0.0 aspire1-weatherservice:1.0.0
 ```
 
 ---
