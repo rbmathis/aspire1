@@ -94,7 +94,8 @@ graph TB
     "date": "2025-12-10",
     "temperatureC": 15,
     "temperatureF": 59,
-    "summary": "Mild"
+    "summary": "Mild",
+    "humidity": 65
   }
   // ... more days
 ]
@@ -338,6 +339,8 @@ app.UseAzureAppConfiguration(); // Enables dynamic refresh
 | --- | --- | --- | --- |
 | `WeatherForecast` | Controls `/weatherforecast` endpoint availability | `true` | Returns 503 if disabled |
 | `DetailedHealth` | Controls level of detail in `/health/detailed` | `true` | Returns minimal health if disabled |
+| `WeatherHumidity` | Controls humidity data in API response and UI visibility | `true` | Returns humidity=0 in API when disabled; UI hides humidity display |
+
 
 ### Usage Patterns
 

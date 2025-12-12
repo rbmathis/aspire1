@@ -25,8 +25,8 @@ public class CachedWeatherServiceTests
         // Arrange
         var expectedForecasts = new[]
         {
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny"),
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 25, "Hot")
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny", 65),
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 25, "Hot", 45)
         };
         var cachedJson = JsonSerializer.Serialize(expectedForecasts);
         var cachedBytes = Encoding.UTF8.GetBytes(cachedJson);
@@ -148,5 +148,19 @@ public class CachedWeatherServiceTests
 
         // Assert
         result.Should().OnlyContain(f => validSummaries.Contains(f.Summary));
+    }
+
+    [Fact]
+    public async Task GetWeatherForecastAsync_GeneratesValidHumidity()
+    {
+        // Arrange
+        _mockCache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((byte[]?)null);
+
+        // Act
+        var result = await _sut.GetWeatherForecastAsync(10);
+
+        // Assert
+        result.Should().OnlyContain(f => f.Humidity >= 20 && f.Humidity < 95);
     }
 }

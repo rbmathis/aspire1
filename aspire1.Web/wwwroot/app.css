@@ -54,3 +54,36 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* Weather Card Styles */
+.weather-card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: none;
+}
+
+.weather-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.weather-card .card-header {
+    background: linear-gradient(135deg, #1b6ec2 0%, #0056b3 100%);
+}
+
+.weather-temp {
+    font-weight: 300;
+    line-height: 1.2;
+}
+
+.weather-summary {
+    margin-top: 0.5rem;
+}
+
+.humidity-info {
+    padding: 0.5rem;
+    background-color: #e7f3ff;
+    border-radius: 0.25rem;
+    display: inline-block;
+    font-size: 0.9rem;
+}

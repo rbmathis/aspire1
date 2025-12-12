@@ -112,6 +112,14 @@ app.MapGet("/weatherforecast", async (CachedWeatherService weatherService, IFeat
 
     var forecasts = await weatherService.GetWeatherForecastAsync(10, cancellationToken);
 
+    // Check if humidity feature is enabled
+    var humidityEnabled = await featureManager.IsEnabledAsync("WeatherHumidity");
+    if (!humidityEnabled)
+    {
+        // Strip humidity data when feature is disabled
+        forecasts = forecasts.Select(f => f with { Humidity = 0 }).ToArray();
+    }
+
     // Track weather API call
     ApplicationMetrics.WeatherApiCalls.Add(1,
         new KeyValuePair<string, object?>("endpoint", "weatherforecast"),

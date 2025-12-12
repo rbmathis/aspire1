@@ -15,7 +15,9 @@ Think of it as the Swiss Army knife of modern .NET applications, except it actua
 **Real answer:** This is a **reference architecture** that demonstrates how to build cloud-native applications with .NET Aspire. It's got all the bells and whistles you'd want in a production app:
 
 - 🌐 **Blazor Server** frontend (because SignalR is cool)
+- 🎨 **Beautiful card-based UI** (with smooth hover effects and responsive layout)
 - 🔌 **REST API** backend (Minimal APIs style, naturally)
+- 💧 **Humidity tracking** (with feature flag control)
 - 📊 **Custom telemetry** (tracks sunny days and counter clicks—priorities!)
 - 💾 **Redis caching** (with graceful offline fallback)
 - 🎚️ **Feature flags** (toggle features without redeploying like a boss)
@@ -195,17 +197,29 @@ Navigate to `/counter` and start clicking. Watch the metrics dashboard light up 
 
 **Why ranges?** Turns out tracking individual numbers 1-10000 gets expensive. Grouping = smarter metrics = lower Azure bill. 💰
 
-### 2. **Weather Forecasts with Personality**
+### 2. **Weather Forecasts with Beautiful Cards**
 
-Hit `/weather` and refresh a few times. The API tracks:
+Hit `/weather` and enjoy the redesigned card-based UI! Each day's forecast is displayed in a beautiful, responsive card with:
+
+- 📅 **Date Display** - Clear, readable date format
+- 🌡️ **Temperature** - Both Celsius and Fahrenheit
+- ☀️ **Weather Summary** - Descriptive conditions
+- 💧 **Humidity** - Real-time humidity percentage (controlled by feature flag)
+
+The cards feature smooth hover effects and automatically adjust to your screen size (3 columns on desktop, 2 on tablet, 1 on mobile).
+
+**Feature Flag Control:** The humidity display is controlled by the `WeatherHumidity` feature flag—toggle it on/off without redeploying!
+
+The API tracks:
 
 - How many times you called it (mild stalking)
 - How many "Sunny" days appear (optimism metrics)
 - Temperature ranges (for the data nerds)
+- Humidity levels (weather nerd approved 🌦️)
 
 ### 3. **Feature Flags Magic**
 
-Toggle the weather feature on/off in Azure App Configuration **without redeploying**:
+Toggle features on/off in Azure App Configuration **without redeploying**:
 
 ```bash
 # Disable weather feature (chaos mode)
@@ -213,8 +227,18 @@ az appconfig kv set --name <your-appconfig> \
   --key ".appconfig.featureflag/WeatherForecast" \
   --value '{"enabled":false}'
 
-# Watch the API return 503 🔥
+# Disable humidity display (mystery mode)
+az appconfig kv set --name <your-appconfig> \
+  --key ".appconfig.featureflag/WeatherHumidity" \
+  --value '{"enabled":false}'
+
+# Watch the changes take effect within 30 seconds 🔥
 ```
+
+**Available Feature Flags:**
+- `WeatherForecast` - Controls entire weather API availability
+- `DetailedHealth` - Controls health endpoint detail level
+- `WeatherHumidity` - Controls humidity data display in the UI
 
 ### 4. **Cache Performance Theater**
 

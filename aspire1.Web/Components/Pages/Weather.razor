@@ -8,7 +8,7 @@
 
 <PageTitle>Weather</PageTitle>
 
-<h1>Weather</h1>
+<h1>Weather Forecast</h1>
 
 @if (!featureEnabled)
 {
@@ -23,32 +23,20 @@ else if (forecasts == null)
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th aria-label="Temperature in Celsius">Temp. (C)</th>
-                <th aria-label="Temperature in Fahrenheit">Temp. (F)</th>
-                <th>Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var forecast in forecasts)
-            {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="row">
+        @foreach (var forecast in forecasts)
+        {
+            <div class="col-md-6 col-lg-4">
+                <WeatherCard Forecast="@forecast" ShowHumidity="@showHumidity" />
+            </div>
+        }
+    </div>
 }
 
 @code {
     private WeatherForecast[]? forecasts;
     private bool featureEnabled = true;
+    private bool showHumidity = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -57,6 +45,8 @@ else
 
         if (featureEnabled)
         {
+            // Check humidity feature flag once for all cards
+            showHumidity = await FeatureManager.IsEnabledAsync("WeatherHumidity");
             forecasts = await WeatherApi.GetWeatherAsync();
         }
     }

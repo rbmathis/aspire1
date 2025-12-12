@@ -77,13 +77,14 @@ public class CachedWeatherService
             (
                 DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
                 Random.Shared.Next(-20, 55),
-                summaries[Random.Shared.Next(summaries.Length)]
+                summaries[Random.Shared.Next(summaries.Length)],
+                Random.Shared.Next(20, 95) // Generate humidity between 20% and 94% (inclusive)
             ))
             .ToArray();
     }
 }
 
-public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary, int Humidity)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
