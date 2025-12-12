@@ -305,44 +305,118 @@ graph TB
 
 ## 📦 CI/CD Pipeline
 
-### GitHub Actions Workflow
+### Multistage Pipeline Architecture
+
+The project uses a **5-stage pipeline** with parallelization for optimal deployment speed:
 
 ```mermaid
-flowchart LR
-    Push[Git Push/Tag] --> Checkout[Checkout Code<br/>fetch-depth: 0]
-    Checkout --> Version[Extract Version<br/>MinVer CLI]
-    Version --> Login[Azure Login<br/>OIDC]
-    Login --> AZD[azd up<br/>Provision + Deploy]
-    AZD --> Verify[Verify Deployment<br/>/version endpoint]
-    Verify --> Summary[Create Release Summary]
-
-    style Version fill:#90EE90
-    style AZD fill:#0078d4,color:#fff
-    style Verify fill:#FFD700
+graph TB
+    Start([Push/Tag/Manual]) --> Build[Stage 1: Build & Version<br/>~2-3 min]
+    Build --> TestWeb[Stage 2a: Test Web<br/>~1-2 min]
+    Build --> TestAPI[Stage 2b: Test API<br/>~1-2 min]
+    TestWeb --> Dev[Stage 3: Deploy Dev<br/>~3-5 min]
+    TestAPI --> Dev
+    Dev --> Stage[Stage 4: Deploy Stage<br/>~3-5 min<br/>Manual Approval]
+    Stage --> Prod[Stage 5: Deploy Prod<br/>~3-5 min<br/>Manual Approval]
+    
+    style Build fill:#0078d4,color:#fff
+    style TestWeb fill:#50e6ff,color:#000
+    style TestAPI fill:#50e6ff,color:#000
+    style Dev fill:#107c10,color:#fff
+    style Stage fill:#ff8c00,color:#fff
+    style Prod fill:#d83b01,color:#fff
 ```
+
+**Total Pipeline Time:**
+- **Dev only (main branch):** ~6-10 minutes
+- **Dev → Stage → Prod (tag):** ~15-20 minutes (including approvals)
+
+### Pipeline Workflows
+
+| Workflow | File | Purpose |
+|----------|------|---------|
+| **Multistage Deploy** | `multistage-deploy.yml` | Production pipeline with 3 environments, parallel testing, manual approvals |
+| **Simple Deploy** | `deploy.yml` | Original single-environment deployment for quick iterations |
 
 ### Trigger Conditions
 
-| Event               | Branch/Tag    | Environment  | Action        |
-| ------------------- | ------------- | ------------ | ------------- |
-| `push`              | `v*` tag      | `dev`        | Deploy to dev |
-| `push`              | `main` branch | `dev`        | Deploy to dev |
-| `workflow_dispatch` | Any           | User selects | Manual deploy |
+#### Multistage Pipeline
+
+| Event               | Branch/Tag       | Deploys To          | Approval Required |
+| ------------------- | ---------------- | ------------------- | ----------------- |
+| `push`              | `main`           | Dev only            | None              |
+| `push`              | `v*` tag         | Dev → Stage → Prod  | Stage, Prod       |
+| `workflow_dispatch` | Any              | Selected env        | Per environment   |
+
+#### Environment Configuration
+
+| Environment | Auto-Deploy | Approval | Wait Time | Purpose                    |
+|-------------|-------------|----------|-----------|----------------------------|
+| **Dev**     | Yes (main)  | None     | 0 min     | Continuous integration     |
+| **Stage**   | After dev   | 1-2      | 0 min     | Pre-production testing     |
+| **Prod**    | After stage | 2+       | 5 min     | Production releases        |
+
+### Pipeline Stages
+
+1. **Build & Version**
+   - Restore NuGet packages (with caching)
+   - Build solution in Release mode
+   - Extract version with MinVer
+   - Upload build artifacts
+
+2. **Parallel Testing**
+   - Run Web.Tests (parallel)
+   - Run WeatherService.Tests (parallel)
+   - Publish test results with coverage
+
+3. **Deploy Dev** (automatic on main)
+   - Azure OIDC authentication
+   - Configure azd environment
+   - Provision + deploy with `azd up`
+   - Verify health endpoints
+
+4. **Deploy Stage** (manual approval)
+   - Requires dev deployment success
+   - Manual approval from 1-2 reviewers
+   - Separate subscription/service principal
+   - Full environment verification
+
+5. **Deploy Prod** (manual approval + wait)
+   - Requires stage deployment success
+   - Manual approval from 2+ reviewers
+   - 5-minute cooling period
+   - Post-deployment checklist
+
+### Security & Authentication
+
+- **OIDC Federation:** No secrets stored in GitHub (only client IDs)
+- **Environment-specific service principals:** Separate identity per environment
+- **Least-privilege access:** Contributor role scoped to subscription
+- **Branch protection:** Required for production deployments
+- **Audit trail:** All approvals and deployments logged
 
 ### azd Hooks (azure.yaml)
 
 1. **preprovision**: Extract version with MinVer, set `VERSION` and `COMMIT_SHA`
-2. **prepackage**: Tag container images with version from registry endpoint
-3. **postdeploy**: Verify deployment, log version info
+2. **postprovision**: Configure Azure App Configuration with feature flags
+3. **prepackage**: Tag container images with version from registry endpoint
+4. **postdeploy**: Verify deployment, log version info
 
-### Deployment Speed
+### Deployment Speed Optimizations
 
-- **Target:** <90 seconds from `git push` to live
-- **Optimizations:**
-  - NuGet package caching
-  - Parallel service builds
-  - Incremental container image layers
-  - Azure CLI authentication via OIDC (no secrets!)
+- **NuGet package caching:** Restore time reduced by ~60%
+- **Parallel testing:** Web + API tests run simultaneously
+- **Build artifact reuse:** Single build used across all deployments
+- **Azure CLI OIDC:** No secret rotation overhead
+- **Incremental deployments:** Only changed containers rebuilt
+
+### Setup Documentation
+
+See [`.github/workflows/PIPELINE_SETUP.md`](.github/workflows/PIPELINE_SETUP.md) for:
+- Environment creation and configuration
+- Azure service principal setup with OIDC
+- GitHub secrets and variables configuration
+- Usage examples and troubleshooting
 
 ## 📈 Observability & Monitoring
 
