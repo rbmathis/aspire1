@@ -43,7 +43,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       commit_sha: ${{ steps.version.outputs.commit_sha }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
           VERSION=$(minver)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "✅ Extracted version: $VERSION"
-          
+
           COMMIT_SHA=${GITHUB_SHA:0:7}
           echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
           echo "✅ Commit SHA: $COMMIT_SHA"
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !inputs.skip_tests }}
     needs: build
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -137,12 +137,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !inputs.skip_tests }}
     needs: build
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
         uses: actions/checkout@v4
 
       - name: Setup .NET
@@ -178,17 +175,17 @@ jobs:
   deploy-dev:
     name: Deploy to Dev
     runs-on: ubuntu-latest
-    environment: 
+    environment:
       name: dev
       url: ${{ steps.deploy.outputs.web_url }}
     needs: [build, test-web, test-api]
     if: |
-      always() && 
+      always() &&
       needs.build.result == 'success' &&
       (needs.test-web.result == 'success' || needs.test-web.result == 'skipped') &&
       (needs.test-api.result == 'success' || needs.test-api.result == 'skipped') &&
       (github.ref == 'refs/heads/main' || github.event.inputs.environment == 'dev')
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -225,13 +222,13 @@ jobs:
           azd auth login --client-id ${{ secrets.AZURE_CLIENT_ID_DEV }} \
             --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
             --federated-credential-provider "github"
-          
+
           azd up --no-prompt
-          
+
           # Capture endpoints
           WEB_URL=$(azd env get-value SERVICE_WEBFRONTEND_ENDPOINT_URL 2>/dev/null || echo "Not available")
           API_URL=$(azd env get-value SERVICE_APISERVICE_ENDPOINT_URL 2>/dev/null || echo "Not available")
-          
+
           echo "web_url=$WEB_URL" >> $GITHUB_OUTPUT
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
         env:
@@ -244,7 +241,7 @@ jobs:
           echo "✅ Deployment to Dev complete!"
           echo "Version: ${{ needs.build.outputs.version }}"
           echo "Environment: dev"
-          
+
           # Test version endpoint if available
           API_URL="${{ steps.deploy.outputs.api_url }}"
           if [ "$API_URL" != "Not available" ]; then
@@ -256,11 +253,11 @@ jobs:
         run: |
           cat >> $GITHUB_STEP_SUMMARY << EOF
           ## 🚀 Dev Deployment Summary
-          
+
           **Version:** \`${{ needs.build.outputs.version }}\`
           **Commit:** \`${{ needs.build.outputs.commit_sha }}\`
           **Environment:** \`dev\`
-          
+
           ### 🔗 Endpoints
           - **Web:** ${{ steps.deploy.outputs.web_url }}
           - **API:** ${{ steps.deploy.outputs.api_url }}
@@ -277,11 +274,11 @@ jobs:
       url: ${{ steps.deploy.outputs.web_url }}
     needs: [build, deploy-dev]
     if: |
-      always() && 
+      always() &&
       needs.build.result == 'success' &&
       needs.deploy-dev.result == 'success' &&
       (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.environment == 'stage')
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -318,13 +315,13 @@ jobs:
           azd auth login --client-id ${{ secrets.AZURE_CLIENT_ID_STAGE }} \
             --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
             --federated-credential-provider "github"
-          
+
           azd up --no-prompt
-          
+
           # Capture endpoints
           WEB_URL=$(azd env get-value SERVICE_WEBFRONTEND_ENDPOINT_URL 2>/dev/null || echo "Not available")
           API_URL=$(azd env get-value SERVICE_APISERVICE_ENDPOINT_URL 2>/dev/null || echo "Not available")
-          
+
           echo "web_url=$WEB_URL" >> $GITHUB_OUTPUT
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
         env:
@@ -337,7 +334,7 @@ jobs:
           echo "✅ Deployment to Stage complete!"
           echo "Version: ${{ needs.build.outputs.version }}"
           echo "Environment: stage"
-          
+
           # Test version endpoint if available
           API_URL="${{ steps.deploy.outputs.api_url }}"
           if [ "$API_URL" != "Not available" ]; then
@@ -349,11 +346,11 @@ jobs:
         run: |
           cat >> $GITHUB_STEP_SUMMARY << EOF
           ## 🚀 Stage Deployment Summary
-          
+
           **Version:** \`${{ needs.build.outputs.version }}\`
           **Commit:** \`${{ needs.build.outputs.commit_sha }}\`
           **Environment:** \`stage\`
-          
+
           ### 🔗 Endpoints
           - **Web:** ${{ steps.deploy.outputs.web_url }}
           - **API:** ${{ steps.deploy.outputs.api_url }}
@@ -370,11 +367,11 @@ jobs:
       url: ${{ steps.deploy.outputs.web_url }}
     needs: [build, deploy-stage]
     if: |
-      always() && 
+      always() &&
       needs.build.result == 'success' &&
       needs.deploy-stage.result == 'success' &&
       (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.environment == 'prod')
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -411,13 +408,13 @@ jobs:
           azd auth login --client-id ${{ secrets.AZURE_CLIENT_ID_PROD }} \
             --tenant-id ${{ secrets.AZURE_TENANT_ID }} \
             --federated-credential-provider "github"
-          
+
           azd up --no-prompt
-          
+
           # Capture endpoints
           WEB_URL=$(azd env get-value SERVICE_WEBFRONTEND_ENDPOINT_URL 2>/dev/null || echo "Not available")
           API_URL=$(azd env get-value SERVICE_APISERVICE_ENDPOINT_URL 2>/dev/null || echo "Not available")
-          
+
           echo "web_url=$WEB_URL" >> $GITHUB_OUTPUT
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
         env:
@@ -430,7 +427,7 @@ jobs:
           echo "✅ Deployment to Production complete!"
           echo "Version: ${{ needs.build.outputs.version }}"
           echo "Environment: prod"
-          
+
           # Test version endpoint if available
           API_URL="${{ steps.deploy.outputs.api_url }}"
           if [ "$API_URL" != "Not available" ]; then
@@ -442,15 +439,15 @@ jobs:
         run: |
           cat >> $GITHUB_STEP_SUMMARY << EOF
           ## 🚀 Production Deployment Summary
-          
+
           **Version:** \`${{ needs.build.outputs.version }}\`
           **Commit:** \`${{ needs.build.outputs.commit_sha }}\`
           **Environment:** \`prod\`
-          
+
           ### 🔗 Endpoints
           - **Web:** ${{ steps.deploy.outputs.web_url }}
           - **API:** ${{ steps.deploy.outputs.api_url }}
-          
+
           ### 📋 Post-Deployment Checklist
           - [ ] Verify application health endpoints
           - [ ] Check Application Insights for errors
@@ -466,17 +463,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, deploy-dev, deploy-stage, deploy-prod]
     if: always()
-    
+
     steps:
       - name: Generate overall summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << EOF
           ## 📊 Overall Pipeline Summary
-          
+
           **Version:** \`${{ needs.build.outputs.version }}\`
           **Commit:** \`${{ needs.build.outputs.commit_sha }}\`
           **Trigger:** \`${{ github.event_name }}\`
-          
+
           ### Stage Results
           | Stage | Status |
           |-------|--------|
