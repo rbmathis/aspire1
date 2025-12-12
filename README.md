@@ -61,7 +61,9 @@ dotnet run --project aspire1.AppHost/aspire1.AppHost.csproj
 
 ---
 
-## ☁️ Deploy to Azure (The "I'm Feeling Lucky" Button)
+## ☁️ Deploy to Azure
+
+### Quick Deploy (Single Environment)
 
 ```bash
 # Login to Azure (just once)
@@ -81,6 +83,41 @@ That's it. Seriously. `azd` will:
 - ✅ Pour you a virtual champagne 🍾
 
 **Time:** ~3-5 minutes (depending on how fast Azure feels today)
+
+### Production Pipeline (3 Environments: Dev → Stage → Prod)
+
+The repository includes a **multistage CI/CD pipeline** with:
+- ✅ **Parallel testing** (Web + API tests run simultaneously)
+- ✅ **3 environments** with separate subscriptions/approvals
+- ✅ **Automatic dev deployments** on push to main
+- ✅ **Manual approvals** for stage and prod
+- ✅ **OIDC authentication** (no secrets stored!)
+- ✅ **Health checks** and deployment verification
+
+**Deployment Flow:**
+```
+main branch → Auto-deploy to Dev (~6-10 min)
+Tag v* → Dev → Stage (approval) → Prod (approval) (~15-20 min)
+```
+
+**Setup:** See [`.github/workflows/PIPELINE_SETUP.md`](.github/workflows/PIPELINE_SETUP.md) for complete setup instructions including:
+- Azure service principal configuration with OIDC
+- GitHub environment and secrets setup
+- Usage examples and troubleshooting
+
+**Quick Start Pipeline:**
+```bash
+# For dev deployment (automatic on main)
+git add .
+git commit -m "Add new feature"
+git push origin main
+# → Automatically deploys to dev after tests pass
+
+# For full release (dev → stage → prod)
+git tag v1.2.3
+git push origin v1.2.3
+# → Deploys to dev, waits for approvals for stage and prod
+```
 
 ---
 
