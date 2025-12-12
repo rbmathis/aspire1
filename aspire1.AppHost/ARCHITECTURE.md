@@ -63,7 +63,33 @@ else
     Console.WriteLine("⚠️  Application Insights disabled for local development");
 }
 
-// 2. Register API Service
+// Add Azure App Configuration (only when deploying)
+var appConfig = !isLocalDev ? builder.AddAzureAppConfiguration("appconfig") : null;
+if (appConfig != null)
+{
+    Console.WriteLine("✅ Azure App Configuration enabled");
+}
+else
+{
+    Console.WriteLine("⚠️  Azure App Configuration disabled for local development");
+}
+
+// Add Redis for distributed caching and session state
+IResourceBuilder<IResourceWithConnectionString>? redis = null;
+if (!isLocalDev)
+{
+    // Use Azure Cache for Redis in deployed environments
+    redis = builder.AddAzureRedis("cache");
+    Console.WriteLine("✅ Azure Cache for Redis enabled (managed service)");
+}
+else
+{
+    // Use local Redis container for development
+    redis = builder.AddRedis("cache");
+    Console.WriteLine("✅ Redis container enabled for local development");
+}
+
+// 2. Register WeatherService
 var weatherService = builder.AddProject<Projects.aspire1_WeatherService>("weatherservice")
     .WithHttpHealthCheck("/health")                    // Health probe endpoint
     .WithEnvironment("APP_VERSION", version)           // Pass version to service
@@ -73,6 +99,14 @@ var weatherService = builder.AddProject<Projects.aspire1_WeatherService>("weathe
 if (appInsights != null)
 {
     weatherService.WithReference(appInsights);
+}
+if (appConfig != null)
+{
+    weatherService.WithReference(appConfig);
+}
+if (redis != null)
+{
+    weatherService.WithReference(redis);
 }
 
 // Only add container annotations when deploying
@@ -91,24 +125,62 @@ var webFrontend = builder.AddProject<Projects.aspire1_Web>("webfrontend")
     .WithHttpHealthCheck("/health")                    // Health probe endpoint
     .WithEnvironment("APP_VERSION", version)           // Pass version to service
     .WithEnvironment("COMMIT_SHA", commitSha)          // Pass commit SHA
-    .WithReference(weatherService)                         // Service discovery reference
-    .WaitFor(weatherService);                              // Startup dependency
+    .WithReference(weatherService)                     // Service discovery reference
+    .WaitFor(weatherService);                          // Startup dependency
 
 // Reference Azure resources if they were added
 if (appInsights != null)
 {
     webFrontend.WithReference(appInsights);
 }
+if (appConfig != null)
+{
+    webFrontend.WithReference(appConfig);
+}
+if (redis != null)
+{
+    webFrontend.WithReference(redis);
+}
 
 // Only add container annotations when deploying
 if (!string.IsNullOrEmpty(builder.Configuration["CONTAINER_REGISTRY"]))
 {
-    webFrontend.WithAnnotation(new ContainerImageAnnotation {     // Container metadata for ACA
+    webFrontend.WithAnnotation(new ContainerImageAnnotation
+    {
         Registry = builder.Configuration["CONTAINER_REGISTRY"],
         Image = "aspire1-web",
         Tag = version
     });
+}
+
+builder.Build().Run();
 ```
+
+### Resource References Explained
+
+| Resource | Local Development | Azure Deployment | Purpose |
+| --- | --- | --- | --- |
+| **appinsights** | Not added | Azure Application Insights | Telemetry (traces, metrics, logs) |
+| **appconfig** | Not added | Azure App Configuration | Feature flags, dynamic config |
+| **cache** | Local Redis container | Azure Cache for Redis | Distributed caching, session state |
+| **weatherservice** | .NET project | Container in ACA | Backend API service |
+| **webfrontend** | .NET project | Container in ACA | Public web frontend |
+
+### Offline-First Design
+
+**Key Principle:** App runs completely disconnected from Azure
+
+**Local Development:**
+- No Azure resources required
+- Uses local Redis container via `builder.AddRedis()`
+- Falls back to in-memory cache if Redis unavailable
+- Feature flags from local `appsettings.json`
+- Telemetry to Aspire Dashboard only
+
+**Azure Deployment:**
+- Managed Azure services (Redis, App Insights, App Config)
+- Automatic connection string injection via `WithReference()`
+- Zero secrets in code or configuration files
 
 ## 🌐 Service Discovery
 

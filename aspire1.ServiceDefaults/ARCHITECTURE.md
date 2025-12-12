@@ -38,7 +38,7 @@ graph TB
     end
 
     subgraph "Consumer Services"
-        API[aspire1.ApiService]
+        API[aspire1.WeatherService]
         Web[aspire1.Web]
     end
 
@@ -75,7 +75,7 @@ graph TB
 **Usage:**
 
 ```csharp
-// In Program.cs of aspire1.ApiService or aspire1.Web
+// In Program.cs of aspire1.WeatherService or aspire1.Web
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults(); // ← Adds everything
 ```
@@ -387,7 +387,7 @@ public static WebApplication MapDefaultEndpoints(this WebApplication app)
 sequenceDiagram
     participant Web as aspire1.Web
     participant Polly as Resilience Handler
-    participant API as aspire1.ApiService
+    participant API as aspire1.WeatherService
 
     Web->>Polly: GET /weatherforecast
     Polly->>API: Attempt 1
@@ -406,7 +406,12 @@ sequenceDiagram
 ```csharp
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
 {
-    client.BaseAddress = new("https+http://apiservice");
+    // "weatherservice" resolves to internal Container App URL
+    var serviceUrl = builder.Configuration["services:weatherservice:https:0"]
+                    ?? builder.Configuration["services:weatherservice:http:0"]
+                    ?? "http://localhost:7002";
+    
+    client.BaseAddress = new Uri(serviceUrl);
 })
 .AddStandardResilienceHandler(options =>
 {
@@ -437,8 +442,12 @@ builder.Services.ConfigureHttpClientDefaults(http =>
 // In aspire1.Web
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
 {
-    // "apiservice" resolves to internal Container App URL
-    client.BaseAddress = new("https+http://apiservice");
+    // "weatherservice" resolves to internal Container App URL
+    var serviceUrl = builder.Configuration["services:weatherservice:https:0"]
+                    ?? builder.Configuration["services:weatherservice:http:0"]
+                    ?? "http://localhost:7002";
+    
+    client.BaseAddress = new Uri(serviceUrl);
 });
 ```
 
@@ -449,21 +458,21 @@ sequenceDiagram
     participant HttpClient
     participant ServiceDiscovery
     participant DNS as Internal DNS
-    participant API as aspire1.ApiService
+    participant API as aspire1.WeatherService
 
-    HttpClient->>ServiceDiscovery: Resolve "apiservice"
-    ServiceDiscovery->>DNS: Lookup "apiservice"
-    DNS-->>ServiceDiscovery: aspire1-apiservice.internal.{env}.azurecontainerapps.io
-    ServiceDiscovery-->>HttpClient: https://aspire1-apiservice.internal:8443
+    HttpClient->>ServiceDiscovery: Resolve "weatherservice"
+    ServiceDiscovery->>DNS: Lookup "weatherservice"
+    DNS-->>ServiceDiscovery: aspire1-weatherservice.internal.{env}.azurecontainerapps.io
+    ServiceDiscovery-->>HttpClient: https://aspire1-weatherservice.internal:8443
     HttpClient->>API: GET /weatherforecast
     API-->>HttpClient: Weather data
 ```
 
 **Scheme Resolution:**
 
-- `https+http://apiservice` → Try HTTPS first, fallback to HTTP
-- `https://apiservice` → HTTPS only (fail if not available)
-- `http://apiservice` → HTTP only (insecure, not recommended)
+- Uses configuration-based URL resolution with fallback
+- Supports both HTTPS and HTTP endpoints
+- Falls back to localhost for standalone debugging
 
 ## 📊 OpenTelemetry Examples
 
@@ -474,8 +483,8 @@ sequenceDiagram
 ```
 Trace ID: abc123
 ├── Span: aspire1-web [GET /weather] (300ms)
-│   ├── Span: HttpClient [GET https://apiservice/weatherforecast] (200ms)
-│   │   └── Span: aspire1-apiservice [GET /weatherforecast] (150ms)
+│   ├── Span: HttpClient [GET https://weatherservice/weatherforecast] (200ms)
+│   │   └── Span: aspire1-weatherservice [GET /weatherforecast] (150ms)
 │   │       └── Span: Generate forecast data (50ms)
 │   └── Span: Render Blazor component (50ms)
 ```
@@ -484,7 +493,7 @@ Trace ID: abc123
 
 ```kql
 dependencies
-| where target == "apiservice"
+| where target == "weatherservice"
 | extend traceId = tostring(customDimensions.TraceId)
 | join kind=inner (requests | where name == "GET /weatherforecast") on $left.traceId == $right.operation_Id
 | project timestamp, web_duration=duration, api_duration=duration1, success
@@ -626,13 +635,13 @@ azd env get-values | findstr services__
 
 - Ensure `AddServiceDiscovery()` is called in ServiceDefaults
 - Verify AppHost uses `WithReference()` to link services
-- Check service name matches: `"apiservice"` (not `"aspire1.ApiService"`)
+- Check service name matches in HttpClient configuration
 
 ## 📚 Related Documentation
 
 - [Root Architecture](../ARCHITECTURE.md)
 - [AppHost Architecture](../aspire1.AppHost/ARCHITECTURE.md)
-- [API Service Architecture](../aspire1.ApiService/ARCHITECTURE.md)
+- [WeatherService Architecture](../aspire1.WeatherService/ARCHITECTURE.md)
 - [Web Service Architecture](../aspire1.Web/ARCHITECTURE.md)
 
 ## 🔗 Useful Resources

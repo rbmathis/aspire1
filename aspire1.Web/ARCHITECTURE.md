@@ -1,8 +1,8 @@
 # Architecture - aspire1.Web
 
 > **Component Type:** Blazor Server
-> **Framework:** ASP.NET Core 10.0
-> **Purpose:** Public-facing web frontend with server-side rendering
+> **Framework:** ASP.NET Core 9.0
+> **Purpose:** Public-facing web frontend with server-side rendering, Redis session state, and feature flags
 
 ## 🎯 Overview
 
@@ -11,6 +11,8 @@ The **Web** project is a Blazor Server application that provides the user interf
 - Server-side Blazor rendering (no WebAssembly)
 - Real-time SignalR connection for UI updates
 - HTTP client integration with service discovery
+- Redis-backed session state with offline-first fallback
+- Azure App Configuration for feature flags
 - OpenTelemetry instrumentation (via ServiceDefaults)
 - Output caching for performance
 
@@ -26,12 +28,15 @@ graph TB
         RazorComponents[Razor Components]
         OutputCache[Output Cache]
         HTTPClient[WeatherApiClient<br/>HTTP Client]
+        SessionState[Session State<br/>Redis-backed]
+        FeatureFlags[Feature Manager]
         ServiceDefaults[ServiceDefaults<br/>OpenTelemetry, Health]
 
         subgraph "Pages"
             Home[Home.razor]
             Weather[Weather.razor]
             Counter[Counter.razor]
+            FeatureDemo[FeatureDemo.razor]
             Error[Error.razor]
         end
 
@@ -43,6 +48,8 @@ graph TB
 
     API[aspire1.WeatherService]
     AppInsights[Application Insights]
+    AppConfig[Azure App Configuration]
+    Redis[Azure Cache for Redis]
 
     User <-->|SignalR| SignalR
     SignalR --> Middleware
@@ -50,18 +57,27 @@ graph TB
     RazorComponents --> Home
     RazorComponents --> Weather
     RazorComponents --> Counter
+    RazorComponents --> FeatureDemo
     RazorComponents --> Error
     RazorComponents --> MainLayout
     MainLayout --> NavMenu
 
     Weather -->|GetWeatherAsync| HTTPClient
     HTTPClient -->|Service Discovery| API
+    
+    Middleware --> SessionState
+    SessionState -->|Store/Retrieve| Redis
+    
+    FeatureDemo --> FeatureFlags
+    FeatureFlags --> AppConfig
 
     Middleware --> OutputCache
     ServiceDefaults -.->|Traces, Metrics| AppInsights
 
     style RazorComponents fill:#0078d4,stroke:#005a9e,color:#fff
     style HTTPClient fill:#50e6ff
+    style SessionState fill:#90EE90
+    style FeatureFlags fill:#FFD700
 ```
 
 ## 📄 Pages & Components
@@ -163,6 +179,38 @@ sequenceDiagram
 
 ---
 
+### `/featuredemo` - FeatureDemo.razor
+
+**Purpose:** Demonstrate feature flag integration with Azure App Configuration
+
+**Features:**
+
+- Shows current status of feature flags in real-time
+- Demonstrates conditional UI based on feature flags
+- Displays environment-specific flag states
+- Example of `IFeatureManager` usage in Blazor components
+
+**Implementation:**
+
+```razor
+@page "/featuredemo"
+@inject IFeatureManager FeatureManager
+
+<h1>Feature Flags Demo</h1>
+
+@code {
+    private Dictionary<string, bool> featureStates = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        featureStates["WeatherForecast"] = await FeatureManager.IsEnabledAsync("WeatherForecast");
+        featureStates["DetailedHealth"] = await FeatureManager.IsEnabledAsync("DetailedHealth");
+    }
+}
+```
+
+---
+
 ### `/error` - Error.razor
 
 **Purpose:** Error boundary for unhandled exceptions
@@ -185,7 +233,12 @@ sequenceDiagram
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
 {
     // Service discovery: "weatherservice" resolves to internal URL
-    client.BaseAddress = new("https+http://weatherservice");
+    // Falls back to localhost for standalone debugging
+    var serviceUrl = builder.Configuration["services:weatherservice:https:0"]
+                    ?? builder.Configuration["services:weatherservice:http:0"]
+                    ?? "http://localhost:7002";
+    
+    client.BaseAddress = new Uri(serviceUrl);
 });
 ```
 
@@ -193,7 +246,7 @@ builder.Services.AddHttpClient<WeatherApiClient>(client =>
 
 - **Service Discovery:** `"weatherservice"` name resolves via Aspire
 - **Resilience:** Automatic retry, circuit breaker, timeout (from ServiceDefaults)
-- **Scheme Preference:** `https+http://` prefers HTTPS, falls back to HTTP
+- **Scheme Preference:** Fallback to localhost for standalone debugging
 - **Instrumentation:** All HTTP calls traced via OpenTelemetry
 
 **Implementation:**
@@ -283,17 +336,180 @@ sequenceDiagram
 ### Key Configuration Steps
 
 1. **Service Defaults:** OpenTelemetry, health checks, resilience handlers
-2. **Razor Components:** Blazor Server rendering engine
-3. **Interactive Server Mode:** SignalR-based component updates
-4. **Output Cache:** Response caching for performance
-5. **HTTP Client:** Typed client with service discovery
-6. **Middleware Pipeline:**
+2. **Azure App Configuration:** Connects to Azure App Config for feature flags (with offline fallback)
+3. **Feature Management:** Registers `IFeatureManager` for runtime feature flag checks
+4. **Redis Distributed Cache & Session State:** Configures Redis with offline-first fallback to in-memory
+5. **Razor Components:** Blazor Server rendering engine
+6. **Interactive Server Mode:** SignalR-based component updates
+7. **Output Cache:** Response caching for performance
+8. **HTTP Client:** Typed client with service discovery fallback
+9. **Middleware Pipeline:**
    - Exception handler (production)
    - HSTS (production)
    - HTTPS redirection
    - Antiforgery tokens (CSRF protection)
+   - Session middleware
+   - Azure App Config refresh middleware (if configured)
    - Static files
-7. **Health Endpoints:** `/health`, `/alive` (from ServiceDefaults)
+10. **Health Endpoints:** `/health`, `/alive` (from ServiceDefaults)
+
+## 🎛️ Feature Flags & Azure App Configuration
+
+### Configuration
+
+**Startup Configuration:**
+
+```csharp
+var appConfigEndpoint = builder.Configuration["AppConfig:Endpoint"];
+if (!string.IsNullOrEmpty(appConfigEndpoint))
+{
+    try
+    {
+        builder.Configuration.AddAzureAppConfiguration(options =>
+        {
+            options.Connect(new Uri(appConfigEndpoint), new DefaultAzureCredential())
+                   .UseFeatureFlags(featureFlagOptions =>
+                   {
+                       featureFlagOptions.SetRefreshInterval(TimeSpan.FromSeconds(30));
+                       featureFlagOptions.Select("*", builder.Environment.EnvironmentName);
+                   });
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Warning: Could not connect to Azure App Configuration: {ex.Message}");
+        Console.WriteLine("Falling back to local feature flag configuration.");
+    }
+}
+
+builder.Services.AddFeatureManagement();
+```
+
+**Middleware:**
+
+```csharp
+app.UseAzureAppConfiguration(); // Enables dynamic refresh every 30 seconds
+```
+
+### Feature Flags Used
+
+The Web project can use feature flags from Azure App Configuration. Example usage in `FeatureDemo.razor`:
+
+```razor
+@inject IFeatureManager FeatureManager
+
+@if (await FeatureManager.IsEnabledAsync("NewFeature"))
+{
+    <p>New feature is enabled!</p>
+}
+else
+{
+    <p>New feature is disabled.</p>
+}
+```
+
+### Offline-First Design
+
+- App starts successfully without Azure App Configuration
+- Falls back to local `appsettings.json` for feature flags
+- Logs warning but continues: `"Warning: Could not connect to Azure App Configuration"`
+- Enables disconnected development
+
+## 💾 Redis Session State
+
+### Configuration
+
+**Startup Configuration:**
+
+```csharp
+var redisConnectionName = builder.Configuration.GetConnectionString("cache");
+if (!string.IsNullOrEmpty(redisConnectionName))
+{
+    try
+    {
+        builder.AddRedisClient("cache");
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionName;
+        });
+
+        // Configure session state with Redis backing
+        builder.Services.AddSession(options =>
+        {
+            options.Cookie.Name = ".aspire1.Session";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.IdleTimeout = TimeSpan.FromMinutes(30); // Sliding expiration
+            options.Cookie.MaxAge = TimeSpan.FromHours(8);  // Absolute maximum
+        });
+
+        Console.WriteLine("✅ Redis cache and session state configured successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️  Warning: Could not connect to Redis: {ex.Message}");
+        Console.WriteLine("Falling back to in-memory cache and session state.");
+        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddSession();
+    }
+}
+else
+{
+    Console.WriteLine("⚠️  Redis not configured (local development mode)");
+    Console.WriteLine("Using in-memory cache and session state as fallback.");
+    builder.Services.AddDistributedMemoryCache();
+    builder.Services.AddSession(options =>
+    {
+        options.Cookie.Name = ".aspire1.Session";
+        options.Cookie.HttpOnly = true;
+        options.IdleTimeout = TimeSpan.FromMinutes(30);
+    });
+}
+```
+
+**Middleware:**
+
+```csharp
+app.UseSession(); // Enable session state middleware
+```
+
+### Session Configuration
+
+| Setting | Value | Purpose |
+| --- | --- | --- |
+| **Cookie Name** | `.aspire1.Session` | Unique identifier for this app |
+| **HttpOnly** | `true` | Prevents JavaScript access (XSS protection) |
+| **SecurePolicy** | `Always` (production) | HTTPS-only in production |
+| **SameSite** | `Lax` | CSRF protection |
+| **Idle Timeout** | 30 minutes | Sliding expiration (resets on activity) |
+| **Max Age** | 8 hours | Absolute maximum session lifetime |
+
+### Session Usage (Future)
+
+```csharp
+// Store session data
+HttpContext.Session.SetString("UserId", "12345");
+HttpContext.Session.SetInt32("PreferredTheme", 1);
+
+// Retrieve session data
+var userId = HttpContext.Session.GetString("UserId");
+var theme = HttpContext.Session.GetInt32("PreferredTheme");
+```
+
+**Best Practices:**
+
+- Store only user context (userId, tenantId, culture)
+- Never store business data in sessions
+- Use Redis-backed sessions for multi-instance deployments
+- Keep session data minimal (reduce network overhead)
+
+### Offline-First Redis
+
+- Local development: Falls back to in-memory session state
+- Production: Uses Azure Cache for Redis
+- No code changes required between environments
+- Graceful degradation if Redis unavailable
 
 ## 📊 Performance Optimization
 
@@ -554,14 +770,14 @@ Blazor: WebSocket connection failed: Error during WebSocket handshake
 
 ```bash
 # Check service discovery environment variable
-azd env get-values | findstr apiservice
+azd env get-values | findstr weatherservice
 ```
 
 **Fix:**
 
-- Ensure AppHost uses `WithReference(apiService)` on Web
-- Verify base address uses service name: `https+http://apiservice`
-- Check API service is healthy: `curl https://apiservice:8443/health`
+- Ensure AppHost uses `WithReference(weatherService)` on Web
+- Verify base address configuration in Program.cs
+- Check WeatherService is healthy: `curl https://weatherservice:8443/health`
 
 ### Weather Page Shows "Loading..." Forever
 
@@ -574,9 +790,9 @@ azd env get-values | findstr apiservice
 
 **Fix:**
 
-- Ensure API service is running and healthy
+- Ensure WeatherService is running and healthy
 - Verify `WeatherApiClient` is registered in DI container
-- Check for exceptions in API service logs
+- Check for exceptions in WeatherService logs
 
 ## ✅ Best Practices vs ❌ Anti-Patterns
 
@@ -598,8 +814,12 @@ builder.Services.AddHttpClient<WeatherApiClient>(client =>
 ```csharp
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
 {
-    // "apiservice" resolves via Aspire service discovery
-    client.BaseAddress = new("https+http://apiservice");
+    // "weatherservice" resolves via Aspire service discovery
+    var serviceUrl = builder.Configuration["services:weatherservice:https:0"]
+                    ?? builder.Configuration["services:weatherservice:http:0"]
+                    ?? "http://localhost:7002";
+    
+    client.BaseAddress = new Uri(serviceUrl);
 });
 ```
 
@@ -618,7 +838,7 @@ public class WeatherApiClient
 
     public WeatherApiClient()
     {
-        _client.BaseAddress = new("http://apiservice");
+        _client.BaseAddress = new("http://weatherservice");
     }
 }
 ```
@@ -631,7 +851,11 @@ public class WeatherApiClient
 // Program.cs
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
 {
-    client.BaseAddress = new("https+http://apiservice");
+    var serviceUrl = builder.Configuration["services:weatherservice:https:0"]
+                    ?? builder.Configuration["services:weatherservice:http:0"]
+                    ?? "http://localhost:7002";
+    
+    client.BaseAddress = new Uri(serviceUrl);
 });
 
 // WeatherApiClient.cs
@@ -656,7 +880,9 @@ public class WeatherApiClient(HttpClient httpClient)
 ```csharp
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
 {
-    client.BaseAddress = new("https+http://apiservice");
+    var serviceUrl = builder.Configuration["services:weatherservice:https:0"]
+                    ?? "http://localhost:7002";
+    client.BaseAddress = new Uri(serviceUrl);
 }); // No resilience handlers
 ```
 
@@ -950,7 +1176,7 @@ app.MapStaticAssets(); // .NET 9+ optimization
 
 - [Root Architecture](../ARCHITECTURE.md)
 - [AppHost Architecture](../aspire1.AppHost/ARCHITECTURE.md)
-- [API Service Architecture](../aspire1.WeatherService/ARCHITECTURE.md)
+- [WeatherService Architecture](../aspire1.WeatherService/ARCHITECTURE.md)
 - [Service Defaults](../aspire1.ServiceDefaults/ARCHITECTURE.md)
 
 ## 🔗 Useful Commands
