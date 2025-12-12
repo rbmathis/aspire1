@@ -148,7 +148,7 @@ private void IncrementCount()
 
 ### `/weather` - Weather.razor
 
-**Purpose:** Display weather forecast from API service
+**Purpose:** Display weather forecast from API service with beautiful card-based UI
 
 **Features:**
 
@@ -156,6 +156,15 @@ private void IncrementCount()
 - Loading state
 - Error handling
 - Data binding
+- Card-based UI with responsive grid layout
+- Feature flag support for humidity display
+
+**UI Components:**
+
+- Uses `WeatherCard.razor` component for each day's forecast
+- Responsive 3-column grid on large screens, 2-column on medium, 1-column on mobile
+- Hover effects with elevation and shadow transitions
+- Humidity display controlled by `WeatherHumidity` feature flag
 
 **Flow:**
 
@@ -163,6 +172,8 @@ private void IncrementCount()
 sequenceDiagram
     participant User
     participant Weather.razor
+    participant WeatherCard
+    participant FeatureManager
     participant WeatherApiClient
     participant ServiceDiscovery
     participant API as aspire1.WeatherService
@@ -172,10 +183,54 @@ sequenceDiagram
     WeatherApiClient->>ServiceDiscovery: Resolve "weatherservice"
     ServiceDiscovery-->>WeatherApiClient: https://weatherservice:8443
     WeatherApiClient->>API: GET /weatherforecast
-    API-->>WeatherApiClient: Weather data (JSON)
+    API-->>WeatherApiClient: Weather data (JSON with humidity)
     WeatherApiClient-->>Weather.razor: List<WeatherForecast>
-    Weather.razor-->>User: Rendered table
+    Weather.razor->>WeatherCard: Render cards for each forecast
+    WeatherCard->>FeatureManager: IsEnabledAsync("WeatherHumidity")
+    FeatureManager-->>WeatherCard: true/false
+    WeatherCard-->>User: Rendered cards (with/without humidity)
 ```
+
+---
+
+### `WeatherCard.razor` - Component
+
+**Purpose:** Display individual daily weather forecast in a beautiful card format
+
+**Features:**
+
+- Responsive card layout with gradient header
+- Temperature display (Celsius and Fahrenheit)
+- Weather summary with icon placeholder
+- Humidity display controlled by `WeatherHumidity` feature flag
+- Hover effects with elevation and shadow transitions
+- Bootstrap 5 card styling with custom enhancements
+
+**Component Properties:**
+
+```csharp
+[Parameter]
+public WeatherForecast? Forecast { get; set; }
+```
+
+**Feature Flag Integration:**
+
+```csharp
+private bool showHumidity = false;
+
+protected override async Task OnInitializedAsync()
+{
+    showHumidity = await FeatureManager.IsEnabledAsync("WeatherHumidity");
+}
+```
+
+**Styling:**
+
+- Custom CSS classes: `.weather-card`, `.weather-temp`, `.weather-summary`, `.humidity-info`
+- Card header with blue gradient background
+- Large temperature display with secondary unit label
+- Humidity badge with light blue background (when enabled)
+- Smooth transitions for hover effects
 
 ---
 
@@ -265,7 +320,7 @@ public class WeatherApiClient(HttpClient httpClient)
     }
 }
 
-public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary, int Humidity)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }

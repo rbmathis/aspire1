@@ -69,7 +69,7 @@ graph TB
 | Service                | Endpoint               | Purpose                                        |
 | ---------------------- | ---------------------- | ---------------------------------------------- |
 | aspire1.WeatherService | `GET /`                | Service status message                         |
-| aspire1.WeatherService | `GET /weatherforecast` | Weather data API with Redis caching           |
+| aspire1.WeatherService | `GET /weatherforecast` | Weather data API with Redis caching and humidity |
 | aspire1.WeatherService | `GET /version`         | Version + commit SHA for deployment tracking   |
 | aspire1.WeatherService | `GET /health/detailed` | Enhanced health with version and feature flags |
 
@@ -524,6 +524,8 @@ git push origin v2.0.0
 
 - [x] Implement Azure App Configuration for feature flags
 - [x] Add Redis distributed caching with offline-first fallback
+- [x] Add humidity data to weather forecasts with feature flag control
+- [x] Implement card-based UI for weather display
 - [ ] Add Azure SQL Database with EF Core
 - [ ] Multi-region deployment with Front Door
 - [ ] Dapr integration for pub/sub and state management
