@@ -339,7 +339,7 @@ app.UseAzureAppConfiguration(); // Enables dynamic refresh
 | --- | --- | --- | --- |
 | `WeatherForecast` | Controls `/weatherforecast` endpoint availability | `true` | Returns 503 if disabled |
 | `DetailedHealth` | Controls level of detail in `/health/detailed` | `true` | Returns minimal health if disabled |
-| `WeatherHumidity` | Controls humidity data visibility in weather forecasts | `true` | Humidity included in response when enabled |
+| `WeatherHumidity` | Controls humidity data in API response and UI visibility | `true` | Returns humidity=0 in API when disabled; UI hides humidity display |
 
 
 ### Usage Patterns

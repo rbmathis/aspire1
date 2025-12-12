@@ -1,7 +1,3 @@
-@using Microsoft.FeatureManagement
-
-@inject IFeatureManager FeatureManager
-
 @if (Forecast != null)
 {
     <div class="card weather-card mb-3">
@@ -20,10 +16,10 @@
                 <div class="col-md-6">
                     <div class="weather-summary">
                         <h6 class="text-primary">@Forecast.Summary</h6>
-                        @if (showHumidity)
+                        @if (ShowHumidity && Forecast.Humidity > 0)
                         {
                             <div class="humidity-info mt-2">
-                                <i class="bi bi-droplet-fill text-info"></i>
+                                <i class="bi bi-droplet-fill text-info" aria-hidden="true"></i>
                                 <strong>Humidity:</strong> @Forecast.Humidity%
                             </div>
                         }
@@ -38,10 +34,6 @@
     [Parameter]
     public WeatherForecast? Forecast { get; set; }
 
-    private bool showHumidity = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        showHumidity = await FeatureManager.IsEnabledAsync("WeatherHumidity");
-    }
+    [Parameter]
+    public bool ShowHumidity { get; set; }
 }

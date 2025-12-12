@@ -211,18 +211,24 @@ sequenceDiagram
 ```csharp
 [Parameter]
 public WeatherForecast? Forecast { get; set; }
+
+[Parameter]
+public bool ShowHumidity { get; set; }
 ```
 
 **Feature Flag Integration:**
 
-```csharp
-private bool showHumidity = false;
+The component receives the `ShowHumidity` parameter from the parent `Weather.razor` component, which checks the feature flag once for all cards:
 
-protected override async Task OnInitializedAsync()
-{
-    showHumidity = await FeatureManager.IsEnabledAsync("WeatherHumidity");
-}
+```csharp
+// In Weather.razor
+showHumidity = await FeatureManager.IsEnabledAsync("WeatherHumidity");
+
+// Passed to each card
+<WeatherCard Forecast="@forecast" ShowHumidity="@showHumidity" />
 ```
+
+This approach is more efficient than checking the feature flag in each card instance, especially when rendering multiple forecasts.
 
 **Styling:**
 
