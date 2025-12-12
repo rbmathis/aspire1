@@ -23,13 +23,45 @@ Before making any code recommendations or changes, always:
 
 ### Architecture Documentation Map
 
-- `/ARCHITECTURE.md` - Solution-wide: topology, deployment, CI/CD, observability, troubleshooting
-- `/aspire1.AppHost/ARCHITECTURE.md` - Service orchestration, service discovery, AppHost configuration
-- `/aspire1.ApiService/ARCHITECTURE.md` - API endpoints, OpenTelemetry, health checks, deployment
-- `/aspire1.Web/ARCHITECTURE.md` - Blazor Server, SignalR, HTTP clients, WeatherApiClient patterns
+- `/ARCHITECTURE.md` - Solution-wide: topology, deployment, CI/CD, observability, troubleshooting, dependencies & change impact analysis
+- `/aspire1.AppHost/ARCHITECTURE.md` - Service orchestration, service discovery, AppHost configuration, Redis & Azure App Config integration
+- `/aspire1.WeatherService/ARCHITECTURE.md` - API endpoints, OpenTelemetry, health checks, deployment, Redis caching, feature flags
+- `/aspire1.Web/ARCHITECTURE.md` - Blazor Server, SignalR, HTTP clients, WeatherApiClient patterns, session state, feature flags
 - `/aspire1.ServiceDefaults/ARCHITECTURE.md` - OpenTelemetry, health checks, resilience, service discovery
 
 Each `ARCHITECTURE.md` includes a "Best Practices vs Anti-Patterns" section with real examples from this codebase.
+
+### Loading Architecture Documentation Efficiently
+
+**Only load the ARCHITECTURE.md files relevant to your current task scope:**
+
+1. **Always load first**: `/ARCHITECTURE.md` for high-level context, dependencies, and change impact analysis
+
+2. **Load based on task scope**:
+   - **Modifying/reviewing AppHost**: Load `/aspire1.AppHost/ARCHITECTURE.md`
+   - **Modifying/reviewing WeatherService API**: Load `/aspire1.WeatherService/ARCHITECTURE.md`
+   - **Modifying/reviewing Web frontend**: Load `/aspire1.Web/ARCHITECTURE.md`
+   - **Modifying/reviewing ServiceDefaults**: Load `/aspire1.ServiceDefaults/ARCHITECTURE.md`
+   - **Cross-cutting concerns** (telemetry, health checks, resilience): Load `/aspire1.ServiceDefaults/ARCHITECTURE.md` + relevant project docs
+   - **Service discovery issues**: Load `/aspire1.AppHost/ARCHITECTURE.md` + affected service docs
+   - **Deployment/infrastructure**: Load `/ARCHITECTURE.md` + `/aspire1.AppHost/ARCHITECTURE.md`
+
+3. **Load multiple when**:
+   - Changes affect service contracts (DTO structures, endpoints): Load both WeatherService and Web docs
+   - Adding new Azure resources: Load AppHost + affected service docs
+   - Changing ServiceDefaults: Load ServiceDefaults + all service docs (WeatherService, Web)
+   - Investigating integration issues: Load docs for all services involved in the flow
+
+4. **Don't load**:
+   - Documentation for services you're not modifying
+   - All docs "just in case" - be selective based on actual task scope
+
+**Example scoping rules**:
+- Task: "Add new endpoint to WeatherService" → Load `/ARCHITECTURE.md` + `/aspire1.WeatherService/ARCHITECTURE.md`
+- Task: "Fix service discovery between Web and WeatherService" → Load `/ARCHITECTURE.md` + `/aspire1.AppHost/ARCHITECTURE.md` + `/aspire1.Web/ARCHITECTURE.md` + `/aspire1.WeatherService/ARCHITECTURE.md`
+- Task: "Update health check patterns" → Load `/ARCHITECTURE.md` + `/aspire1.ServiceDefaults/ARCHITECTURE.md`
+- Task: "Add feature flag to UI" → Load `/aspire1.Web/ARCHITECTURE.md`
+- Task: "Understand dependencies before changing DTO" → Load `/ARCHITECTURE.md` (Dependencies & Change Impact section) + `/aspire1.WeatherService/ARCHITECTURE.md` + `/aspire1.Web/ARCHITECTURE.md`
 
 ## Code Patterns
 
@@ -236,9 +268,9 @@ azd down --force --purge
 
 ```csharp
 // In AppHost Program.cs
-var apiService = builder.AddProject<Projects.aspire1_ApiService>("apiservice");
+var weatherService = builder.AddProject<Projects.aspire1_WeatherService>("weatherservice");
 var webApp = builder.AddProject<Projects.aspire1_Web>("webfrontend")
-    .WithReference(apiService);  // ✓ Automatic service discovery
+    .WithReference(weatherService);  // ✓ Automatic service discovery
 ```
 
 ### Bad: Hard-coded URLs
