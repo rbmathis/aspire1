@@ -11,8 +11,8 @@ public class WeatherApiClientTests
         // Arrange
         var forecasts = new[]
         {
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny"),
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 22, "Cloudy")
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny", 65),
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 22, "Cloudy", 75)
         };
 
         var httpClient = CreateHttpClientWithResponse(forecasts);
@@ -35,9 +35,9 @@ public class WeatherApiClientTests
         // Arrange
         var forecasts = new[]
         {
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny"),
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 22, "Cloudy"),
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(2)), 18, "Rainy")
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny", 65),
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(1)), 22, "Cloudy", 75),
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now.AddDays(2)), 18, "Rainy", 85)
         };
 
         var httpClient = CreateHttpClientWithResponse(forecasts);
@@ -85,7 +85,7 @@ public class WeatherApiClientTests
         // Arrange
         var forecasts = new[]
         {
-            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny")
+            new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny", 65)
         };
 
         var httpClient = CreateHttpClientWithResponse(forecasts);
@@ -111,7 +111,8 @@ public class WeatherApiClientTests
             .Select(i => new WeatherForecast(
                 DateOnly.FromDateTime(DateTime.Now.AddDays(i)),
                 20 + i,
-                $"Summary{i}"))
+                $"Summary{i}",
+                50 + i))
             .ToArray();
 
         var httpClient = CreateHttpClientWithResponse(forecasts);
@@ -128,13 +129,38 @@ public class WeatherApiClientTests
     public void WeatherForecast_TemperatureF_CalculatesCorrectly()
     {
         // Arrange
-        var forecast = new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 0, "Test");
+        var forecast = new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 0, "Test", 50);
 
         // Act
         var temperatureF = forecast.TemperatureF;
 
         // Assert
         temperatureF.Should().Be(32); // 0°C = 32°F
+    }
+
+    [Fact]
+    public void WeatherForecast_Humidity_StoresCorrectly()
+    {
+        // Arrange
+        var expectedHumidity = 75;
+        var forecast = new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), 20, "Sunny", expectedHumidity);
+
+        // Act & Assert
+        forecast.Humidity.Should().Be(expectedHumidity);
+    }
+
+    [Theory]
+    [InlineData(20, 95)]
+    [InlineData(50, 50)]
+    [InlineData(85, 30)]
+    public void WeatherForecast_VariousHumidityValues_StoresCorrectly(int temperature, int humidity)
+    {
+        // Arrange & Act
+        var forecast = new WeatherForecast(DateOnly.FromDateTime(DateTime.Now), temperature, "Test", humidity);
+
+        // Assert
+        forecast.Humidity.Should().Be(humidity);
+        forecast.TemperatureC.Should().Be(temperature);
     }
 
     private static HttpClient CreateHttpClientWithResponse(WeatherForecast[] forecasts)
