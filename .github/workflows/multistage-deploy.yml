@@ -182,8 +182,7 @@ jobs:
     if: |
       always() &&
       needs.build.result == 'success' &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'skipped') &&
-      (needs.test-api.result == 'success' || needs.test-api.result == 'skipped') &&
+      (inputs.skip_tests == true || (needs.test-web.result == 'success' && needs.test-api.result == 'success')) &&
       (github.ref == 'refs/heads/main' || github.event.inputs.environment == 'dev')
 
     steps:
@@ -210,7 +209,10 @@ jobs:
       - name: Configure azd environment
         run: |
           azd config set auth.useAzCliAuth true
-          azd env new dev --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID_DEV }} --location ${{ vars.AZURE_LOCATION_DEV || 'eastus' }} || true
+          # Create environment if it doesn't exist
+          if ! azd env list | grep -q "^dev$"; then
+            azd env new dev --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID_DEV }} --location ${{ vars.AZURE_LOCATION_DEV || 'eastus' }}
+          fi
           azd env select dev
           azd env set VERSION ${{ needs.build.outputs.version }}
           azd env set COMMIT_SHA ${{ needs.build.outputs.commit_sha }}
@@ -303,7 +305,10 @@ jobs:
       - name: Configure azd environment
         run: |
           azd config set auth.useAzCliAuth true
-          azd env new stage --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID_STAGE }} --location ${{ vars.AZURE_LOCATION_STAGE || 'eastus' }} || true
+          # Create environment if it doesn't exist
+          if ! azd env list | grep -q "^stage$"; then
+            azd env new stage --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID_STAGE }} --location ${{ vars.AZURE_LOCATION_STAGE || 'eastus' }}
+          fi
           azd env select stage
           azd env set VERSION ${{ needs.build.outputs.version }}
           azd env set COMMIT_SHA ${{ needs.build.outputs.commit_sha }}
@@ -396,7 +401,10 @@ jobs:
       - name: Configure azd environment
         run: |
           azd config set auth.useAzCliAuth true
-          azd env new prod --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }} --location ${{ vars.AZURE_LOCATION_PROD || 'eastus' }} || true
+          # Create environment if it doesn't exist
+          if ! azd env list | grep -q "^prod$"; then
+            azd env new prod --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }} --location ${{ vars.AZURE_LOCATION_PROD || 'eastus' }}
+          fi
           azd env select prod
           azd env set VERSION ${{ needs.build.outputs.version }}
           azd env set COMMIT_SHA ${{ needs.build.outputs.commit_sha }}
