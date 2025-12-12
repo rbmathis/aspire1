@@ -78,7 +78,7 @@ public class CachedWeatherService
                 DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
                 Random.Shared.Next(-20, 55),
                 summaries[Random.Shared.Next(summaries.Length)],
-                Random.Shared.Next(20, 95) // Generate humidity between 20% and 95%
+                Random.Shared.Next(20, 95) // Generate humidity between 20% and 94% (inclusive)
             ))
             .ToArray();
     }
