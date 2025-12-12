@@ -221,7 +221,7 @@ flowchart LR
 
 ```bash
 # Set local secrets
-dotnet user-secrets set "ConnectionStrings:MyDb" "..." --project aspire1.ApiService
+dotnet user-secrets set "ConnectionStrings:MyDb" "..." --project aspire1.WeatherService
 
 # Run locally
 dotnet run --project aspire1.AppHost
@@ -352,7 +352,7 @@ flowchart LR
 graph LR
     subgraph "Container Apps"
         Web[aspire1-web]
-        API[aspire1-apiservice]
+        API[aspire1-weatherservice]
     end
 
     subgraph "Azure Monitor"
@@ -421,10 +421,10 @@ exceptions
 
 ### KEDA Autoscaling Rules
 
-| Service            | Trigger               | Scale In Delay | Scale Out Delay |
-| ------------------ | --------------------- | -------------- | --------------- |
-| aspire1-web        | HTTP (100 concurrent) | 5 min          | 30 sec          |
-| aspire1-apiservice | HTTP (50 concurrent)  | 5 min          | 30 sec          |
+| Service                | Trigger               | Scale In Delay | Scale Out Delay |
+| ---------------------- | --------------------- | -------------- | --------------- |
+| aspire1-web            | HTTP (100 concurrent) | 5 min          | 30 sec          |
+| aspire1-weatherservice | HTTP (50 concurrent)  | 5 min          | 30 sec          |
 
 **Cold Start Strategy:**
 
@@ -447,7 +447,7 @@ curl http://localhost:{port}/health
 curl http://localhost:{port}/version
 
 # Tail logs
-dotnet watch --project aspire1.ApiService
+dotnet watch --project aspire1.WeatherService
 ```
 
 ### Azure (Production)
@@ -597,7 +597,7 @@ dotnet test --collect:"XPlat Code Coverage"
 **Key Test Patterns:**
 
 ```csharp
-// ApiService: Mocking IDistributedCache
+// WeatherService: Mocking IDistributedCache
 _mockCache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
     .Returns(cachedData);
 

@@ -614,7 +614,7 @@ dependencies
 
 ```bash
 # Run standalone (requires AppHost for service discovery)
-dotnet run --project aspire1.ApiService
+dotnet run --project aspire1.WeatherService
 
 # Access endpoints
 curl http://localhost:7002/weatherforecast

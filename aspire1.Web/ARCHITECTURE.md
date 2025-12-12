@@ -254,11 +254,11 @@ builder.Services.AddHttpClient<WeatherApiClient>(client =>
 ```csharp
 public class WeatherApiClient(HttpClient httpClient)
 {
-    public async Task<WeatherForecast[]?> GetWeatherAsync(
+    public async Task<WeatherForecast[]> GetWeatherAsync(
         int maxItems = 10,
         CancellationToken cancellationToken = default)
     {
-        // Calls: https://apiservice:8443/weatherforecast?maxItems=10
+        // Calls: https://weatherservice:8443/weatherforecast?maxItems=10
         return await httpClient.GetFromJsonAsync<WeatherForecast[]>(
             $"/weatherforecast?maxItems={maxItems}",
             cancellationToken);
@@ -728,7 +728,7 @@ public class WebIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task WeatherPage_CallsApiService()
+    public async Task WeatherPage_CallsWeatherService()
     {
         // Act
         var response = await _client.GetAsync("/weather");
