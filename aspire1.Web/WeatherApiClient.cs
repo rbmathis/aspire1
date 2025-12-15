@@ -11,7 +11,7 @@ public class WeatherApiClient(HttpClient httpClient)
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var success = false;
 
-        try
+        try //comments
         {
             List<WeatherForecast>? forecasts = null;
 
